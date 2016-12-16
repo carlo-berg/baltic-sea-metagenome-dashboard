@@ -21,8 +21,6 @@ lmo.mg.TIGRFAM.subrole <- read.delim(file = "lmo.mg.TIGRFAM.subrole.tab", string
 colnames(lmo.mg.TIGRFAM.subrole) <- gsub("X", "", colnames(lmo.mg.TIGRFAM.subrole))
 
 
-
-
 lmo.mg.TIGRFAM.mainrole <- na.omit(lmo.mg.TIGRFAM.mainrole)
 
 lmo.mg.TIGRFAM.mainrole.long <- melt(data = lmo.mg.TIGRFAM.mainrole, id.vars = c("mainrole"), variable_name = "date")
@@ -79,7 +77,8 @@ ui <- dashboardPage(
   skin = "green",
   
   # header content ----  
-  dashboardHeader(title = "LMO metagenome indicators", titleWidth = 300),
+  dashboardHeader(title = "LMO metagenome indicators", 
+                  titleWidth = 300),
   
   # sidebar content ----
   dashboardSidebar(
@@ -90,7 +89,11 @@ ui <- dashboardPage(
       menuItem("TIGRFAM", tabName = "TIGRFAM", icon = icon("align-center")),
       menuItem("Contextual data", tabName = "contextual", icon = icon("database")),
       menuItem("Data description", tabName = "description", icon = icon("pencil-square-o")),
-      dateRangeInput("dates", label = h4("Date range"), start = "2012-01-01", end = "2012-12-31", min = "2012-01-01", max = "2012-12-31")
+      #dateRangeInput("dates", label = h4("Date range"), start = "2012-01-01", end = "2012-12-31", min = "2012-01-01", max = "2012-12-31"),
+      
+      uiOutput('resetable_input'),
+      actionButton("reset_date", label = "reset date range")
+      
       
     )
   ),
@@ -242,7 +245,16 @@ ui <- dashboardPage(
 # BEGIN SERVER ###################################################
 server <- function(input, output) { 
 
-  # Network graph, in progres....
+
+  output$resetable_input <- renderUI({
+    dates <- input$reset_date
+    div(
+      dateRangeInput("dates", label = h4("Date range"), start = "2012-01-01", end = "2012-12-31", min = "2012-01-01", max = "2012-12-31")
+      
+    )
+  })  
+  
+    # Network graph, in progres....
     
   output$force <- renderForceNetwork({
     
@@ -306,6 +318,8 @@ server <- function(input, output) {
     #              Group = "group", opacity = 0.9,
     #              zoom = TRUE)
   })  
+  
+  
   
   
   
