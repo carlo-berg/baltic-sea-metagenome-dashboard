@@ -9,6 +9,7 @@ library(Hmisc)  # for statistics
 library(igraph) # for igraph and networks
 library(networkD3)
 library(vegan)
+library(plyr)
 
 # setting colors
 cols <- colorRampPalette(brewer.pal(10, "RdBu"))(256)
@@ -140,7 +141,8 @@ ui <- dashboardPage(
               
               fluidRow(
                 column(width = 8,
-                       box(plotOutput("plot1"), width = NULL,  title = "TIGRFAM bar plot", solidHeader = TRUE, collapsible = TRUE)
+                       box(plotOutput("plot1"), width = NULL,  title = "TIGRFAM bar plot", solidHeader = TRUE, collapsible = TRUE),
+                       box(plotOutput("plot2"), width = NULL,  title = "TIGRFAM bar plot s2", solidHeader = TRUE, collapsible = TRUE)
                 ),
                 column(width = 4,
                        box(title = "Protein families", width = NULL, solidHeader = TRUE,
@@ -358,6 +360,20 @@ server <- function(input, output) {
   
   output$plot1 <- renderPlot({
     ggplot(data = plot1data()) + geom_bar(aes(x = date, y = value, fill = mainrole), stat = "identity") + theme(axis.text.x = element_text(angle = 90))
+  })
+  
+  
+  
+  plot2data <- reactive({ 
+    
+    
+  plot2data <- ddply(lmo.mg.TIGRFAM.mainrole.long,~mainrole,summarise,mean=mean(value),sd=sd(value))
+    
+  })
+  
+  
+  output$plot2 <- renderPlot({
+        ggplot(data = plot2data()) + geom_bar(aes(y = mean, x = mainrole, group = mainrole), stat = "identity") + theme(axis.text.x = element_text(angle = 90)) + coord_flip()
   })
   
   # lmo.mg.TIGRFAM.mainrole <- reactive({ 
