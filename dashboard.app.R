@@ -90,10 +90,10 @@ ui <- dashboardPage(
       menuItem("TIGRFAM", tabName = "TIGRFAM", icon = icon("align-center")),
       menuItem("Contextual data", tabName = "contextual", icon = icon("database")),
       menuItem("Data description", tabName = "description", icon = icon("pencil-square-o")),
-      #dateRangeInput("dates", label = h4("Date range"), start = "2012-01-01", end = "2012-12-31", min = "2012-01-01", max = "2012-12-31"),
-      
-      uiOutput('resetable_input'),
-      actionButton("reset_date", label = "reset date range")
+      dateRangeInput("dates", label = h4("Date range"), start = "2012-01-01", end = "2012-12-31", min = "2012-01-01", max = "2012-12-31")
+
+            # uiOutput('resetable_input'),
+      # actionButton("reset_date", label = "reset date range")
       
       
     )
@@ -248,13 +248,13 @@ ui <- dashboardPage(
 server <- function(input, output) { 
 
 
-  output$resetable_input <- renderUI({
-    dates <- input$reset_date
-    div(
-      dateRangeInput("dates", label = h4("Date range"), start = "2012-01-01", end = "2012-12-31", min = "2012-01-01", max = "2012-12-31")
-      
-    )
-  })  
+  # output$resetable_input <- renderUI({
+  #   dates <- input$reset_date
+  #   div(
+  #     dateRangeInput("dates", label = h4("Date range"), start = "2012-01-01", end = "2012-12-31", min = "2012-01-01", max = "2012-12-31")
+  #     
+  #   )
+  # })  
   
     # Network graph, in progres....
     
