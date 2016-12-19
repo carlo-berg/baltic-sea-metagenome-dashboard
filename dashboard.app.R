@@ -10,6 +10,8 @@ library(igraph) # for igraph and networks
 library(networkD3)
 library(vegan)
 library(plyr)
+library(plotly)
+
 
 # setting colors
 cols <- colorRampPalette(brewer.pal(10, "RdBu"))(256)
@@ -142,7 +144,7 @@ ui <- dashboardPage(
               fluidRow(
                 column(width = 8,
                        box(plotOutput("plot1"), width = NULL,  title = "TIGRFAM bar plot", solidHeader = TRUE, collapsible = TRUE),
-                       box(plotOutput("plot2"), width = NULL,  title = "TIGRFAM bar plot s2", solidHeader = TRUE, collapsible = TRUE)
+                       box(plotlyOutput("plot2"), width = NULL,  title = "TIGRFAM bar plot s2", solidHeader = TRUE, collapsible = TRUE)
                 ),
                 column(width = 4,
                        box(title = "Protein families", width = NULL, solidHeader = TRUE,
@@ -196,7 +198,7 @@ ui <- dashboardPage(
               fluidRow(
                 column(width = 8,
                        
-                       box(plotOutput("contextual"), width = NULL, title = "Contextual data plot", solidHeader = TRUE, collapsible = TRUE)
+                       box(plotlyOutput("contextual"), width = NULL, title = "Contextual data plot", solidHeader = TRUE, collapsible = TRUE)
                        
                 ),
                 
@@ -359,6 +361,9 @@ server <- function(input, output) {
   histdata <- rnorm(500)
   
   output$plot1 <- renderPlot({
+    
+
+    
     ggplot(data = plot1data()) + geom_bar(aes(x = date, y = value, fill = mainrole), stat = "identity") + theme(axis.text.x = element_text(angle = 90))
   })
   
@@ -372,8 +377,10 @@ server <- function(input, output) {
   })
   
   
-  output$plot2 <- renderPlot({
-        ggplot(data = plot2data()) + geom_bar(aes(y = mean, x = mainrole, group = mainrole), stat = "identity") + theme(axis.text.x = element_text(angle = 90)) + coord_flip()
+  output$plot2 <- renderPlotly({
+    
+        plot2 <- ggplot(data = plot2data()) + geom_bar(aes(y = mean, x = mainrole, group = mainrole), stat = "identity") + theme(axis.text.x = element_text(angle = 90)) + coord_flip()
+        ggplotly(plot2)
   })
   
   # lmo.mg.TIGRFAM.mainrole <- reactive({ 
@@ -385,20 +392,19 @@ server <- function(input, output) {
   
   
   
-  output$contextual <- renderPlot({
     
-    output$contextual <- renderPlot({
-      ggplot(plotcontextualdata()) + 
+    output$contextual <- renderPlotly({
+  contextualplot <-     ggplot(plotcontextualdata()) + 
         geom_line(aes(x = SampleID, y = value)) + #, group = variable
         geom_point(aes(x = SampleID, y = value)) +  #, group = variable
         # facet_wrap(  ~ variable, scales = "free", ncol = 1 ) +
         ylab("Measured values") +
         xlab("Time")
-      
+      ggplotly(contextualplot)
       
     })
     
-  })
+  
   
   
   
