@@ -1,4 +1,6 @@
 ## dashboard.app.R 
+# https://github.com/carlo-berg/lmo.indicators
+
 library(shiny)
 library(shinydashboard)
 library(ggplot2)
@@ -92,12 +94,8 @@ ui <- dashboardPage(
       menuItem("TIGRFAM", tabName = "TIGRFAM", icon = icon("align-center")),
       menuItem("Contextual data", tabName = "contextual", icon = icon("database")),
       menuItem("Data description", tabName = "description", icon = icon("pencil-square-o")),
+      menuItem("Individual Samples", tabName = "samples", icon = icon("list")),
       dateRangeInput("dates", label = h4("Date range"), start = "2012-01-01", end = "2012-12-31", min = "2012-01-01", max = "2012-12-31")
-
-            # uiOutput('resetable_input'),
-      # actionButton("reset_date", label = "reset date range")
-      
-      
     )
   ),
   
@@ -222,9 +220,15 @@ ui <- dashboardPage(
                                      "Metagenomic data from 2012 retrieved from sampling at the Linnaeus Microbial Observatory (LMO) station. (...)"))
               
               
+      ),
+      
+      
+      tabItem(tabName = "samples",
+              h2("Features of individual samples"),
+      
+      column(width = 12, box(title = "List of samples", solidHeader = TRUE, width = NULL,
+                             "Indicator features calculated separately for each sample."))
       )
-      
-      
                          ),
     
     
@@ -234,7 +238,7 @@ ui <- dashboardPage(
       infoBoxOutput("statusBox")
     ),
     
-    div(class = "footer", p("LMO indicator dashboard. Version as of 2016-12-16, carlo.berg@scilifelab.se"))
+    div(class = "footer", p("LMO indicator dashboard. Version as of 2016-12-20, carlo.berg@scilifelab.se"))
 
                      )
 
