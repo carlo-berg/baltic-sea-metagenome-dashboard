@@ -143,7 +143,7 @@ ui <- dashboardPage(
               
               fluidRow(
                 column(width = 8,
-                       box(plotOutput("plot1"), width = NULL,  title = "TIGRFAM bar plot", solidHeader = TRUE, collapsible = TRUE),
+                       box(plotlyOutput("plot1"), width = NULL,  title = "TIGRFAM bar plot", solidHeader = TRUE, collapsible = TRUE),
                        box(plotlyOutput("plot2"), width = NULL,  title = "TIGRFAM bar plot s2", solidHeader = TRUE, collapsible = TRUE)
                 ),
                 column(width = 4,
@@ -235,33 +235,18 @@ ui <- dashboardPage(
     ),
     
     div(class = "footer", p("LMO indicator dashboard. Version as of 2016-12-16, carlo.berg@scilifelab.se"))
-    
-    
-    
-    
+
                      )
-  
-  
-  
+
                      )
 
 
 # BEGIN SERVER ###################################################
 server <- function(input, output) { 
 
-
-  # output$resetable_input <- renderUI({
-  #   dates <- input$reset_date
-  #   div(
-  #     dateRangeInput("dates", label = h4("Date range"), start = "2012-01-01", end = "2012-12-31", min = "2012-01-01", max = "2012-12-31")
-  #     
-  #   )
-  # })  
-  
     # Network graph, in progres....
     
   output$force <- renderForceNetwork({
-    
     
     lmo.mg.TIGRFAM.mainrole.sh.t.x <- lmo.mg.TIGRFAM.mainrole.sh.t[, -c(10,18)]
     
@@ -298,138 +283,83 @@ server <- function(input, output) {
     el[, 3] <- as.integer(rep(6, nrow(el)))
     el <- el[, c(1:3)]
     
-    # el$Var1 <- as.numeric(el$Var1)
-    # el$Var2 <- as.numeric(el$Var2)
-    
-    # forceNetwork(Links = el, Nodes = nodes, 
-    #              Source = "Var1", Target = "Var2", 
-    #              Value = "r", NodeID = "nodes", 
-    #              Group ="color", opacity = 1,
-    #              zoom =T)
     g <- graph.edgelist(as.matrix(el[,1:2]), directed = FALSE) 
     
     g_d3 <- igraph_to_networkD3(g, group = membership(cluster_walktrap(g)))
     
-    # Create force directed network plot
     forceNetwork(Links = g_d3$links, Nodes = g_d3$nodes, 
                  Source = 'source', Target = 'target', 
                  NodeID = 'name', Group = 'group', zoom =T)    
-    
-    ### sample/test network 
-    # forceNetwork(Links = MisLinks, Nodes = MisNodes,
-    #              Source = "source", Target = "target",
-    #              Value = "value", NodeID = "name",
-    #              Group = "group", opacity = 0.9,
-    #              zoom = TRUE)
+
   })  
   
   
   
   
   
-  plot1data <- reactive({ 
-    
-    plot1data <- subset(lmo.mg.TIGRFAM.mainrole.long, date >= as.Date(input$dates[1], format = "%Y%m%d") & date <= as.Date(input$dates[2], format = "%Y%m%d"))
-    
-  })
-  
+  plot1data <- reactive({
+    plot1data <- lmo.mg.TIGRFAM.mainrole.long[ which(lmo.mg.TIGRFAM.mainrole.long[, "date"] >= as.Date(input$dates[1], format = "%Y%m%d") & 
+                                                    lmo.mg.TIGRFAM.mainrole.long[, "date"] <= as.Date(input$dates[2], format = "%Y%m%d")), ] 
+    })
   
   plotcontextualdata <- reactive({ 
-    
-    plotcontextualdata <- subset(metadata.FILE.melt, variable == input$nutrients & SampleID >= as.Date(input$dates[1], format = "%Y%m%d") & SampleID <= as.Date(input$dates[2], format = "%Y%m%d"))
-    
+    plotcontextualdata <- metadata.FILE.melt[ which(metadata.FILE.melt[, "SampleID"] >= as.Date(input$dates[1], format = "%Y%m%d") & 
+                                                      metadata.FILE.melt[, "SampleID"] <= as.Date(input$dates[2], format = "%Y%m%d") &
+                                                      metadata.FILE.melt[, "variable"] == input$nutrients), ] 
   })
   
-  
-  diversity.index <- reactive({ 
-    
-    # calculate average shannon index
-    diversity.index <- mean(diversity.melt[which(diversity.melt[, "date"] >= as.Date(input$dates[1], format = "%Y%m%d") & diversity.melt[, "date"] <= as.Date(input$dates[2], format = "%Y%m%d")), "value"])
-    
+diversity.index <- reactive({ 
+  # calculate average shannon index
+  diversity.index <- mean(diversity.melt[which(diversity.melt[, "date"] >= as.Date(input$dates[1], format = "%Y%m%d") & 
+                                                 diversity.melt[, "date"] <= as.Date(input$dates[2], format = "%Y%m%d")), "value"])
   })
   
-  num.samples <- reactive({ 
-    
-    num.samples <- length(diversity.melt[which(diversity.melt[, "date"] >= as.Date(input$dates[1], format = "%Y%m%d") & diversity.melt[, "date"] <= as.Date(input$dates[2], format = "%Y%m%d")), "value"])
-    
+num.samples <- reactive({ 
+  num.samples <- length(diversity.melt[which(diversity.melt[, "date"] >= as.Date(input$dates[1], format = "%Y%m%d") & 
+                                               diversity.melt[, "date"] <= as.Date(input$dates[2], format = "%Y%m%d")), "value"])
   })
   
-  
-  
-  
-  set.seed(122)
-  histdata <- rnorm(500)
-  
-  output$plot1 <- renderPlot({
-    
-
-    
-    ggplot(data = plot1data()) + geom_bar(aes(x = date, y = value, fill = mainrole), stat = "identity") + theme(axis.text.x = element_text(angle = 90))
+output$plot1 <- renderPlotly({
+   plot1 <-  ggplot(data = plot1data()) + 
+     geom_bar(aes(x = date, y = value, fill = mainrole), stat = "identity") + 
+     theme(axis.text.x = element_text(angle = 90))
+   ggplotly(plot1)
   })
   
-  
-  
-  plot2data <- reactive({ 
-    
-    
-  plot2data <- ddply(lmo.mg.TIGRFAM.mainrole.long,~mainrole,summarise,mean=mean(value),sd=sd(value))
-    
+plot2data <- reactive({
+  plot2data <- ddply(lmo.mg.TIGRFAM.mainrole.long, ~ mainrole, summarise, mean = mean(value), sd = sd(value))
   })
   
-  
-  output$plot2 <- renderPlotly({
-    
-        plot2 <- ggplot(data = plot2data()) + geom_bar(aes(y = mean, x = mainrole, group = mainrole), stat = "identity") + theme(axis.text.x = element_text(angle = 90)) + coord_flip()
+output$plot2 <- renderPlotly({
+        plot2 <- ggplot(data = plot2data()) + 
+          geom_bar(aes(y = mean, x = mainrole, group = mainrole), stat = "identity") + 
+          theme(axis.text.x = element_text(angle = 90)) + 
+          coord_flip()
         ggplotly(plot2)
-  })
-  
-  # lmo.mg.TIGRFAM.mainrole <- reactive({ 
-  #   
-  #   lmo.mg.TIGRFAM.mainrole <- lmo.mg.TIGRFAM.mainrole[,-1]
-  #   
-  # })
-  
-  
-  
-  
-    
-    output$contextual <- renderPlotly({
-  contextualplot <-     ggplot(plotcontextualdata()) + 
-        geom_line(aes(x = SampleID, y = value)) + #, group = variable
-        geom_point(aes(x = SampleID, y = value)) +  #, group = variable
-        # facet_wrap(  ~ variable, scales = "free", ncol = 1 ) +
+        })
+
+output$contextual <- renderPlotly({
+  contextualplot <- ggplot(plotcontextualdata()) + 
+        geom_line(aes(x = SampleID, y = value)) + 
+        geom_point(aes(x = SampleID, y = value)) +
         ylab("Measured values") +
         xlab("Time")
       ggplotly(contextualplot)
-      
     })
-    
-  
-  
-  
-  
-  
+
   plotheatmapdata <- reactive({ 
-    
     plotheatmapdata <- lmo.mg.TIGRFAM.mainrole[, c(1, which(as.Date(colnames(lmo.mg.TIGRFAM.mainrole), format = "%Y%m%d") >= as.Date(input$dates[1], format = "%Y%m%d") & 
                                                               as.Date(colnames(lmo.mg.TIGRFAM.mainrole), format = "%Y%m%d") <= as.Date(input$dates[2], format = "%Y%m%d")
     )) ] 
-    
-    
-    
+
   })  
-  
-  
-  
+
   
   output$heatmap <- renderD3heatmap({
-    
     d3heatmap(plotheatmapdata(), colors = cols, scale="column")
-    
   })
   
 
-  
 # InfoBoxes
   output$diversityBox <- renderInfoBox({
     infoBox(
