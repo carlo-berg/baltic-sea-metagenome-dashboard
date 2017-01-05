@@ -13,6 +13,7 @@ library(networkD3)
 library(vegan)
 library(plyr)
 library(plotly)
+library(pspline)
 
 
 # setting colors
@@ -88,6 +89,7 @@ metadata.FILE.melt <- melt(
 
 metadata.FILE.melt[, 1] <-
   as.Date(metadata.FILE.melt[, 1], format = "%y%m%d")
+
 
 
 
@@ -275,6 +277,13 @@ ui <- dashboardPage(
                     title = "Contextual data plot",
                     solidHeader = TRUE,
                     collapsible = TRUE
+                  ),
+                  box(
+                    plotlyOutput("plotderivative"),
+                    width = NULL,
+                    title = "1st derivative",
+                    solidHeader = TRUE,
+                    collapsible = TRUE
                   )
                   
                 ),
@@ -305,6 +314,12 @@ ui <- dashboardPage(
                       ),
                       selected = "Temperature"
                     )
+                  ),
+                  box(
+                    title = "Information",
+                    width = NULL,
+                    solidHeader = TRUE,
+                    p("The red line is the first derivative of the data. The dashed line marks the median, solid lines mark the upper and lower standard deviations of the 1st derivative.")
                   )
                 )
               )),
@@ -350,8 +365,8 @@ ui <- dashboardPage(
     
     div(
       class = "footer",
-      p(
-        "LMO indicator dashboard. Version as of 2016-12-20, carlo.berg@scilifelab.se"
+      HTML(
+        "LMO indicator dashboard. <a href=mailto:carlo.berg@scilifelab.se>carlo.berg@scilifelab.se</a>"
       )
     )
     
@@ -448,6 +463,46 @@ server <- function(input, output) {
       ), ]
   })
   
+  plotderivativedata <- reactive({
+    ## first derivataive of metadata -----
+    
+    plotderivativedata <- metadata.FILE#[which(metadata.FILE[, "SampleID"] >= as.Date(input$dates[1], format = "%Y%m%d") & 
+                                        #        metadata.FILE[, "SampleID"] <= as.Date(input$dates[2], format = "%Y%m%d")), ]
+    
+    plotderivativedata <- na.omit(plotderivativedata[, c("SampleID", input$nutrients)]) #input$nutrients
+    plotderivativedata[,1] <- as.Date(plotderivativedata[,1], format = "%y%m%d")
+    plotderivativedata <- plotderivativedata[which(plotderivativedata[, 1] >= as.Date(input$dates[1], format = "%Y-%m-%d") & #input$dates[1]
+                                                      plotderivativedata[, 1] <= as.Date(input$dates[2], format = "%Y-%m-%d")), ] #input$dates[2]
+    
+    # plotderivativedata <- plotderivativedata2
+    
+    plotderivativedata[, "number"] <- as.numeric(seq(1:nrow(plotderivativedata)))
+      #as.numeric(rownames(plotderivativedata))
+    
+    # calculating the first derivative
+    plotderivativedata[, "abl1"] <- predict(sm.spline(plotderivativedata[,3], plotderivativedata[,2]), plotderivativedata[,2], 1)
+    #plotderivativedata <- na.omit(plotderivativedata)
+    plotderivativedata <- as.data.frame(na.omit(plotderivativedata))
+  })
+  
+  
+  output$plotderivative <- renderPlotly({
+    tempplot <- ggplot(plotderivativedata()) + 
+    # geom_line(aes(x = number, y = plotderivativedata()[, 2])) +
+    # geom_point(aes(x = number, y = plotderivativedata()[, 2])) +
+    geom_line(aes(x = SampleID, y = (abl1)), color = "red") +
+    geom_point(aes(x = SampleID, y = (abl1)), color = "red") +
+    geom_hline(yintercept = median(plotderivativedata()$abl1), linetype="dashed") +
+    geom_hline(yintercept = median(plotderivativedata()$abl1) + sd(plotderivativedata()$abl1)) +
+    geom_hline(yintercept = median(plotderivativedata()$abl1) - sd(plotderivativedata()$abl1)) +
+    scale_x_date(limits = c(input$dates[1], input$dates[2])) + 
+    ylab("Measured values") +
+    xlab("Time")
+    ggplotly(tempplot)
+  })
+  
+  
+  
   plotcontextualdata <- reactive({
     plotcontextualdata <-
       metadata.FILE.melt[which(
@@ -501,9 +556,10 @@ server <- function(input, output) {
   })
   
   output$contextual <- renderPlotly({
-    contextualplot <- ggplot(plotcontextualdata()) +
+    contextualplot <- ggplot(na.omit(plotcontextualdata())) +
       geom_line(aes(x = SampleID, y = value)) +
       geom_point(aes(x = SampleID, y = value)) +
+      scale_x_date(limits = c(input$dates[1], input$dates[2])) + 
       ylab("Measured values") +
       xlab("Time")
     ggplotly(contextualplot)
