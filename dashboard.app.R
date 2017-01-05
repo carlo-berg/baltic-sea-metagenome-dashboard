@@ -43,10 +43,8 @@ TIGRFAM.mainrole.long[, "date"] <-
   as.Date(TIGRFAM.mainrole.long[, "date"], format = "%Y%m%d")
 
 
-
-TIGRFAM.mainrole.sh <- na.omit(TIGRFAM.mainrole)
-TIGRFAM.mainrole <- na.omit(TIGRFAM.mainrole)
-rownames(TIGRFAM.mainrole.sh) <- (TIGRFAM.mainrole[, 1])
+TIGRFAM.mainrole.sh <- TIGRFAM.mainrole
+rownames(TIGRFAM.mainrole.sh) <- TIGRFAM.mainrole[, 1]
 TIGRFAM.mainrole.sh <- TIGRFAM.mainrole.sh[,-1]
 TIGRFAM.mainrole.sh.t <- t(TIGRFAM.mainrole.sh)
 
@@ -63,7 +61,6 @@ diversity <- t(diversity.melt[, c(1, 3)])
 
 rownames(TIGRFAM.mainrole) <- TIGRFAM.mainrole[, 1]
 TIGRFAM.mainrole <- TIGRFAM.mainrole[, -1]
-
 
 
 
