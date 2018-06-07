@@ -1,2 +1,2 @@
 # lmo.indicators
-BLUEPRINT Linnaeus Microbial Observatory (LMO) Indicator Dashboard
+An R Shiny App Dashboard for Baltic Sea metagenome datasets
