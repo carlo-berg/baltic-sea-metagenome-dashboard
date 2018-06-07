@@ -182,14 +182,16 @@ ui <- dashboardPage(
                     width = NULL,
                     solidHeader = TRUE,
                     collapsible = TRUE,
-                    "Upload a file with additional sample data.",
+                    "Upload a file with additional sample data. \n \n",
                     # sliderInput("opacity", label = h4("Network Opacity"), "Decimal:", min = 0, max = 1, value = 0.8, step= 0.1, dragRange = FALSE),
-                    fileInput("file1", "Choose CSV File",
+                    fileInput("file1", "Choose data File",
                               accept = c(
                                 "text/csv",
                                 "text/comma-separated-values,text/plain",
                                 ".csv")
-                    )
+                    ),
+                    checkboxInput("somevalue", "LMO station", FALSE),
+                    checkboxInput("somevalue2", "Baltic Sea transect", FALSE)
                   )
                   
                 )
@@ -401,6 +403,10 @@ server <- function(input, output) {
     
     read.csv(inFile$datapath, header = input$header)
   })
+  
+  # checkboxes for data selection
+  output$value <- renderText({ input$somevalue })
+  output$value2 <- renderText({ input$somevalue2 })
   
    # Network graph, in progres....
   
