@@ -31,6 +31,15 @@ TIGRFAM.subrole <-
 colnames(TIGRFAM.subrole) <-
   gsub("X", "", colnames(TIGRFAM.subrole))
 
+KEGG.tpm <- read.delim(file = "lmo2012_transect2014_redox2014.KEGG-pathway-module.tpm.tsv")
+
+# preparing data ----
+
+names <- KEGG.tpm[,1]
+KEGG.tpm <- KEGG.tpm[,-1]
+KEGG.tpm <- apply(KEGG.tpm, 2, as.numeric)
+KEGG.tpm <- as.matrix(KEGG.tpm)
+rownames(KEGG.tpm) <- names
 
 TIGRFAM.mainrole <- na.omit(TIGRFAM.mainrole)
 
@@ -99,7 +108,7 @@ ui <- dashboardPage(
   skin = "green",
   
   # header content ----
-  dashboardHeader(title = "LMO metagenome indicators",
+  dashboardHeader(title = "Baltic Sea metagenome",
                   titleWidth = 300),
   
   # sidebar content ----
@@ -147,7 +156,7 @@ ui <- dashboardPage(
               h2("Dashboard overview"),
               fluidRow(
                 column(
-                  width = 6,
+                  width = 9,
                   box(
                     "Click and drag to select specific dates or categories.",
                     d3heatmapOutput("heatmap"),
@@ -166,15 +175,21 @@ ui <- dashboardPage(
                 ),
                 
                 column(
-                  width = 6,
+                  width = 3,
+## Upload sample data ---
                   box(
-                    title = "Network view",
+                    title = "Upload data",
                     width = NULL,
                     solidHeader = TRUE,
                     collapsible = TRUE,
-                    "Use the mouse wheel to zoom.",
+                    "Upload a file with additional sample data.",
                     # sliderInput("opacity", label = h4("Network Opacity"), "Decimal:", min = 0, max = 1, value = 0.8, step= 0.1, dragRange = FALSE),
-                    forceNetworkOutput("force")
+                    fileInput("file1", "Choose CSV File",
+                              accept = c(
+                                "text/csv",
+                                "text/comma-separated-values,text/plain",
+                                ".csv")
+                    )
                   )
                   
                 )
@@ -314,12 +329,6 @@ ui <- dashboardPage(
                       ),
                       selected = "Temperature"
                     )
-                  ),
-                  box(
-                    title = "Information",
-                    width = NULL,
-                    solidHeader = TRUE,
-                    p("The red line is the first derivative of the data. The dashed line marks the median, solid lines mark the upper and lower standard deviations of the 1st derivative.")
                   )
                 )
               )),
@@ -366,7 +375,7 @@ ui <- dashboardPage(
     div(
       class = "footer",
       HTML(
-        "LMO indicator dashboard. <a href=mailto:carlo.berg@scilifelab.se>carlo.berg@scilifelab.se</a>"
+        "Baltic Sea metagenome dashboard. <a href=mailto:carlo.berg@scilifelab.se>carlo.berg@scilifelab.se</a>"
       )
     )
     
@@ -377,7 +386,23 @@ ui <- dashboardPage(
 
 # BEGIN SERVER ###################################################
 server <- function(input, output) {
-  # Network graph, in progres....
+ 
+  # import csv file
+  output$contents <- renderTable({
+    # input$file1 will be NULL initially. After the user selects
+    # and uploads a file, it will be a data frame with 'name',
+    # 'size', 'type', and 'datapath' columns. The 'datapath'
+    # column will contain the local filenames where the data can
+    # be found.
+    inFile <- input$file1
+    
+    if (is.null(inFile))
+      return(NULL)
+    
+    read.csv(inFile$datapath, header = input$header)
+  })
+  
+   # Network graph, in progres....
   
   output$force <- renderForceNetwork({
     TIGRFAM.mainrole.sh.t.x <- TIGRFAM.mainrole.sh.t[, -c(10, 18)]
@@ -565,18 +590,16 @@ server <- function(input, output) {
     ggplotly(contextualplot)
   })
   
-  plotheatmapdata <- reactive({
-    plotheatmapdata <-
-      TIGRFAM.mainrole[, c(1, which(
-        as.Date(colnames(TIGRFAM.mainrole), format = "%Y%m%d") >= as.Date(input$dates[1], format = "%Y%m%d") &
-          as.Date(colnames(TIGRFAM.mainrole), format = "%Y%m%d") <= as.Date(input$dates[2], format = "%Y%m%d")
-      ))]
-    
-  })
+  # plotheatmapdata <- reactive({
+  #   plotheatmapdata <-
+  #     KEGG.tpm[, c(1:20)]
+  # })
   
   
   output$heatmap <- renderD3heatmap({
-    d3heatmap(plotheatmapdata(), colors = cols, scale = "column")
+    d3heatmap(
+      scale(KEGG.tpm[, c(1:20)])
+    )
   })
   
   
