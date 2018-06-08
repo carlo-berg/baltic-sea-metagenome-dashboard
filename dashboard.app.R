@@ -1,19 +1,15 @@
 ## dashboard.app.R
-# https://github.com/carlo-berg/lmo.indicators
+# https://github.com/carlo-berg/baltic-sea-metagenome-dashboard
 
 library(shiny)
 library(shinydashboard)
-library(ggplot2)
 library(reshape)
-library(d3heatmap)
-require(RColorBrewer)
-library(Hmisc)  # for statistics
-library(igraph) # for igraph and networks
-library(networkD3)
-library(vegan)
-library(plyr)
+library(ggplot2)
 library(plotly)
-library(pspline)
+library(d3heatmap)
+library(DT)
+library(RColorBrewer)
+library(kableExtra)
 
 
 # setting colors
@@ -21,17 +17,8 @@ cols <- colorRampPalette(brewer.pal(10, "RdBu"))(256)
 
 # loading data ----
 metadata.FILE <-
-  read.delim(file = "LMO.time.series.metadata.csv", stringsAsFactors = FALSE)
-TIGRFAM.mainrole <-
-  read.delim(file = "lmo.mg.TIGRFAM.mainrole.tab", stringsAsFactors = FALSE)[-c(11, 19, 20),] # excluding "no TIGRFAM", "Unclassified", "Unknown function"
-colnames(TIGRFAM.mainrole) <-
-  gsub("X", "", colnames(TIGRFAM.mainrole))
-TIGRFAM.subrole <-
-  read.delim(file = "lmo.mg.TIGRFAM.subrole.tab", stringsAsFactors = FALSE)[-c(11, 19, 20),] # excluding "no TIGRFAM", "Unclassified", "Unknown function"
-colnames(TIGRFAM.subrole) <-
-  gsub("X", "", colnames(TIGRFAM.subrole))
-
-KEGG.tpm <- read.delim(file = "lmo2012_transect2014_redox2014.KEGG-pathway-module.tpm.tsv")
+  read.delim(file = "../data/LMO.time.series.metadata.csv", stringsAsFactors = FALSE)
+KEGG.tpm <- read.delim(file = "../data/lmo2012_transect2014_redox2014.KEGG-pathway-module.tpm.tsv")
 
 # preparing data ----
 
@@ -40,37 +27,6 @@ KEGG.tpm <- KEGG.tpm[,-1]
 KEGG.tpm <- apply(KEGG.tpm, 2, as.numeric)
 KEGG.tpm <- as.matrix(KEGG.tpm)
 rownames(KEGG.tpm) <- names
-
-TIGRFAM.mainrole <- na.omit(TIGRFAM.mainrole)
-
-TIGRFAM.mainrole.long <-
-  melt(
-    data = TIGRFAM.mainrole,
-    id.vars = c("mainrole"),
-    variable_name = "date"
-  )
-TIGRFAM.mainrole.long[, "date"] <-
-  as.Date(TIGRFAM.mainrole.long[, "date"], format = "%Y%m%d")
-
-
-TIGRFAM.mainrole.sh <- TIGRFAM.mainrole
-rownames(TIGRFAM.mainrole.sh) <- TIGRFAM.mainrole[, 1]
-TIGRFAM.mainrole.sh <- TIGRFAM.mainrole.sh[,-1]
-TIGRFAM.mainrole.sh.t <- t(TIGRFAM.mainrole.sh)
-
-shannon <-
-  vegan::diversity(TIGRFAM.mainrole.sh.t, index = "shannon")
-shannon <- as.data.frame(shannon)
-shannon$date <- row.names(shannon)
-
-diversity.melt <- melt(shannon, id.vars = "date")
-diversity.melt$date <-
-  as.Date(diversity.melt$date, format = "%Y%m%d")
-diversity <- t(diversity.melt[, c(1, 3)])
-
-
-rownames(TIGRFAM.mainrole) <- TIGRFAM.mainrole[, 1]
-TIGRFAM.mainrole <- TIGRFAM.mainrole[, -1]
 
 
 
@@ -115,20 +71,15 @@ ui <- dashboardPage(
   dashboardSidebar(
     width = 300,
     sidebarMenu(
-      menuItem("Overview", tabName = "dashboard", icon = icon("bar-chart")),
-      menuItem("Indicators", tabName = "indicators", icon = icon("th")),
-      menuItem(
-        "TIGRFAM",
-        tabName = "TIGRFAM",
-        icon = icon("align-center")
-      ),
+      menuItem("Heatmap", tabName = "dashboard", icon = icon("bar-chart")),
+      
       menuItem(
         "Contextual data",
         tabName = "contextual",
         icon = icon("database")
       ),
       menuItem(
-        "Data description",
+        "View data table",
         tabName = "description",
         icon = icon("pencil-square-o")
       ),
@@ -137,6 +88,20 @@ ui <- dashboardPage(
         tabName = "samples",
         icon = icon("list")
       ),
+     
+        
+        
+        sliderInput("unifRange", "Columns", min = 1, max = ncol(KEGG.tpm), value = c(1, 15)),
+        numericInput("normCount", "Rows", 20),
+        actionButton("go", "Plot"),
+      
+      fileInput("file1", "Choose data File",
+                accept = c(
+                  "text/csv",
+                  "text/comma-separated-values,text/plain",
+                  ".csv")
+      ),
+      
       dateRangeInput(
         "dates",
         label = h4("Date range"),
@@ -153,132 +118,29 @@ ui <- dashboardPage(
     tabItems(
       # First tab content
       tabItem(tabName = "dashboard",
-              h2("Dashboard overview"),
+              h2("Heatmap"),
               fluidRow(
                 column(
-                  width = 9,
-                  box(
-                    "Click and drag to select specific dates or categories.",
-                    d3heatmapOutput("heatmap"),
-                    title = "Heatmap plot",
-                    width = NULL,
-                    solidHeader = TRUE,
-                    collapsible = TRUE
-                  ),
+                  width = 12,
                   box(
                     title = "Information",
                     width = NULL,
                     solidHeader = TRUE,
                     collapsible = TRUE,
-                    "Select the date range in the side bar on the left side. The graph and boxes with indicator values will be updated automatically."
-                  )
-                ),
-                
-                column(
-                  width = 3,
-## Upload sample data ---
+                    "Select the date range in the side bar on the left side. The graph and boxes with indicator values will be updated automatically. Click and drag to select specific dates or categories."
+                  ),
                   box(
-                    title = "Upload data",
+                    d3heatmapOutput("heatmap"),
+                    title = "Heatmap plot",
                     width = NULL,
                     solidHeader = TRUE,
-                    collapsible = TRUE,
-                    "Upload a file with additional sample data. \n \n",
-                    # sliderInput("opacity", label = h4("Network Opacity"), "Decimal:", min = 0, max = 1, value = 0.8, step= 0.1, dragRange = FALSE),
-                    fileInput("file1", "Choose data File",
-                              accept = c(
-                                "text/csv",
-                                "text/comma-separated-values,text/plain",
-                                ".csv")
-                    ),
-                    checkboxInput("somevalue", "LMO station", FALSE),
-                    checkboxInput("somevalue2", "Baltic Sea transect", FALSE)
+                    collapsible = TRUE
                   )
                   
                 )
               )),
       
       
-      
-      
-      
-      
-      tabItem(tabName = "TIGRFAM",
-              h2("TIGRFAM categories"),
-              
-              fluidRow(
-                column(
-                  width = 8,
-                  box(
-                    plotlyOutput("plot1"),
-                    width = NULL,
-                    title = "TIGRFAM bar plot",
-                    solidHeader = TRUE,
-                    collapsible = TRUE
-                  ),
-                  box(
-                    plotlyOutput("plot2"),
-                    width = NULL,
-                    title = "TIGRFAM bar plot s2",
-                    solidHeader = TRUE,
-                    collapsible = TRUE
-                  )
-                ),
-                column(
-                  width = 4,
-                  box(
-                    title = "Protein families",
-                    width = NULL,
-                    solidHeader = TRUE,
-                    "Shows the TIGRFAM protein families."
-                  )
-                )
-                
-              )),
-      
-      
-      
-      tabItem(tabName = "indicators",
-              h2("Indicators"),
-              
-              column(
-                width = 8,
-                box(
-                  title = "Overview",
-                  solidHeader = TRUE,
-                  width = NULL,
-                  collapsible = TRUE,
-                  
-                  h3("Main objectives"),
-                  "The main objective is to provide a description of the current ecosystem status that integrates metagenomic data of microbial populations.",
-                  
-                  h3("Core indicators"),
-                  
-                  "Indicators breaking down characteristics of the dataset. Core indicators with relevance to the Baltic Sea are: ",
-                  HTML(
-                    "
-                    <br><br>
-                    <ul>
-                    <li>Microbial abundance</li>
-                    <li>Taxonomic diversity<b>*</b></li>
-                    <li>Cyanobacteria abundance<b>*</b></li>
-                    </ul><br>
-                    <b>*</b> = based on metagenomic data
-                    "
-                  ),
-                  
-                  h3("Additional indicators"),
-                  
-                  HTML(
-                    "
-                    <ul>
-                    <li>Temperature onset of nodularin gene-expression<b>*</b></li>
-                    
-                    </ul>
-                    "
-                  )
-                  
-                  )
-                  )),
       
       
       
@@ -338,7 +200,7 @@ ui <- dashboardPage(
       
       
       tabItem(tabName = "description",
-              h2("Description of the data"),
+              h2("Data table"),
               
               column(
                 width = 12,
@@ -346,7 +208,13 @@ ui <- dashboardPage(
                   title = "Description",
                   solidHeader = TRUE,
                   width = NULL,
-                  "Metagenomic data from 2012 retrieved from sampling at the Linnaeus Microbial Observatory (LMO) station. (...)"
+                  "This table displays the data which you selected for on the left side and which is displayed in the heatmap."
+                ),
+                box(
+                  title = "View Data",
+                  solidHeader = TRUE,
+                  width = NULL,
+                  DTOutput('tbl')
                 )
               )),
       
@@ -388,15 +256,43 @@ ui <- dashboardPage(
 
 # BEGIN SERVER ###################################################
 server <- function(input, output) {
- 
+
+  #datatable
+  
+  {
+    output$tbl = renderDT(
+      KEGG.tpm[c(1:input$normCount), c(1:input$unifRange[2])], options = list(lengthChange = FALSE)
+    )
+  }
+  
+  
+  # plot on action
+  
+  v <- reactiveValues(doPlot = FALSE)
+  
+  observeEvent(input$go, {
+    # 0 will be coerced to FALSE
+    # 1+ will be coerced to TRUE
+    v$doPlot <- input$go
+  })
+  
+  output$plot <- renderPlot({
+    if (v$doPlot == FALSE) return()
+    
+    isolate({
+      data <- if (input$tabset == "dashboard") {
+        runif(input$unifCount, input$unifRange[1], input$unifRange[2])
+      } else {
+        rnorm(input$normCount, input$normMean, input$normSd)
+      }
+      
+      hist(data)
+    })
+  })
+   
   # import csv file
   output$contents <- renderTable({
-    # input$file1 will be NULL initially. After the user selects
-    # and uploads a file, it will be a data frame with 'name',
-    # 'size', 'type', and 'datapath' columns. The 'datapath'
-    # column will contain the local filenames where the data can
-    # be found.
-    inFile <- input$file1
+     inFile <- input$file1
     
     if (is.null(inFile))
       return(NULL)
@@ -407,131 +303,7 @@ server <- function(input, output) {
   # checkboxes for data selection
   output$value <- renderText({ input$somevalue })
   output$value2 <- renderText({ input$somevalue2 })
-  
-   # Network graph, in progres....
-  
-  output$force <- renderForceNetwork({
-    TIGRFAM.mainrole.sh.t.x <- TIGRFAM.mainrole.sh.t[, -c(10, 18)]
-    
-    lmo.corrtable <-
-      rcorr(x = as.matrix(TIGRFAM.mainrole.sh.t.x[, c(2:ncol(TIGRFAM.mainrole.sh.t.x))]),
-            type = "spearman") # use "spearman" or "pearson"
-    
-    # extract correlation tables with r and P values ----
-    lmo.corrtable.r <- lmo.corrtable$r
-    lmo.corrtable.P <- lmo.corrtable$P
-    
-    #making edgelists
-    el.r <- as.data.frame.table(lmo.corrtable.r)
-    el.P <- as.data.frame.table(lmo.corrtable.P)
-    el <- cbind(el.r, el.P[, 3])
-    colnames(el) <- c("Var1", "Var2", "r", "P")
-    
-    
-    # remove self-loops from edgelist ----
-    el <- el[which(el[, 1] != el[, 2]), ]
-    
-    # setting cutoffs for r and P
-    el <-
-      el[which((el["r"] > 0.3 | el["r"] < -0.2) & el["P"] < 0.001), ]
-    
-    # assigning red color to negative correlations ----
-    el["color"] <- "darkgray"
-    el[which((el["r"] < -0.4) & el["P"] < 0.0001), "color"] <- "red"
-    el.color <- el["color"]
-    
-    
-    nodes <- as.data.frame(rownames(lmo.corrtable.r))
-    colnames(nodes) <- "nodes"
-    nodes["color"] <-
-      c(
-        "green",
-        "green",
-        "green",
-        "green",
-        "green",
-        "black",
-        "green",
-        "black",
-        "green",
-        "black",
-        "green",
-        "green",
-        "green",
-        "green",
-        "green"
-      )
-    
-    el[, 3] <- as.integer(rep(6, nrow(el)))
-    el <- el[, c(1:3)]
-    
-    g <- graph.edgelist(as.matrix(el[, 1:2]), directed = FALSE)
-    
-    g_d3 <-
-      igraph_to_networkD3(g, group = membership(cluster_walktrap(g)))
-    
-    forceNetwork(
-      Links = g_d3$links,
-      Nodes = g_d3$nodes,
-      Source = 'source',
-      Target = 'target',
-      NodeID = 'name',
-      Group = 'group',
-      zoom = T
-    )
-    
-  })
-  
-  
-  
-  
-  
-  plot1data <- reactive({
-    plot1data <-
-      TIGRFAM.mainrole.long[which(
-        TIGRFAM.mainrole.long[, "date"] >= as.Date(input$dates[1], format = "%Y%m%d") &
-          TIGRFAM.mainrole.long[, "date"] <= as.Date(input$dates[2], format = "%Y%m%d")
-      ), ]
-  })
-  
-  plotderivativedata <- reactive({
-    ## first derivataive of metadata -----
-    
-    plotderivativedata <- metadata.FILE#[which(metadata.FILE[, "SampleID"] >= as.Date(input$dates[1], format = "%Y%m%d") & 
-                                        #        metadata.FILE[, "SampleID"] <= as.Date(input$dates[2], format = "%Y%m%d")), ]
-    
-    plotderivativedata <- na.omit(plotderivativedata[, c("SampleID", input$nutrients)]) #input$nutrients
-    plotderivativedata[,1] <- as.Date(plotderivativedata[,1], format = "%y%m%d")
-    plotderivativedata <- plotderivativedata[which(plotderivativedata[, 1] >= as.Date(input$dates[1], format = "%Y-%m-%d") & #input$dates[1]
-                                                      plotderivativedata[, 1] <= as.Date(input$dates[2], format = "%Y-%m-%d")), ] #input$dates[2]
-    
-    # plotderivativedata <- plotderivativedata2
-    
-    plotderivativedata[, "number"] <- as.numeric(seq(1:nrow(plotderivativedata)))
-      #as.numeric(rownames(plotderivativedata))
-    
-    # calculating the first derivative
-    plotderivativedata[, "abl1"] <- predict(sm.spline(plotderivativedata[,3], plotderivativedata[,2]), plotderivativedata[,2], 1)
-    #plotderivativedata <- na.omit(plotderivativedata)
-    plotderivativedata <- as.data.frame(na.omit(plotderivativedata))
-  })
-  
-  
-  output$plotderivative <- renderPlotly({
-    tempplot <- ggplot(plotderivativedata()) + 
-    # geom_line(aes(x = number, y = plotderivativedata()[, 2])) +
-    # geom_point(aes(x = number, y = plotderivativedata()[, 2])) +
-    geom_line(aes(x = SampleID, y = (abl1)), color = "red") +
-    geom_point(aes(x = SampleID, y = (abl1)), color = "red") +
-    geom_hline(yintercept = median(plotderivativedata()$abl1), linetype="dashed") +
-    geom_hline(yintercept = median(plotderivativedata()$abl1) + sd(plotderivativedata()$abl1)) +
-    geom_hline(yintercept = median(plotderivativedata()$abl1) - sd(plotderivativedata()$abl1)) +
-    scale_x_date(limits = c(input$dates[1], input$dates[2])) + 
-    ylab("Measured values") +
-    xlab("Time")
-    ggplotly(tempplot)
-  })
-  
+ 
   
   
   plotcontextualdata <- reactive({
@@ -543,40 +315,14 @@ server <- function(input, output) {
       ), ]
   })
   
-  diversity.index <- reactive({
-    # calculate average shannon index
-    diversity.index <-
-      mean(diversity.melt[which(
-        diversity.melt[, "date"] >= as.Date(input$dates[1], format = "%Y%m%d") &
-          diversity.melt[, "date"] <= as.Date(input$dates[2], format = "%Y%m%d")
-      ), "value"])
-  })
-  
-  num.samples <- reactive({
-    num.samples <-
-      length(diversity.melt[which(
-        diversity.melt[, "date"] >= as.Date(input$dates[1], format = "%Y%m%d") &
-          diversity.melt[, "date"] <= as.Date(input$dates[2], format = "%Y%m%d")
-      ), "value"])
-  })
-  
+
   output$plot1 <- renderPlotly({
     plot1 <-  ggplot(data = plot1data()) +
       geom_bar(aes(x = date, y = value, fill = mainrole), stat = "identity") +
       theme(axis.text.x = element_text(angle = 90))
     ggplotly(plot1)
   })
-  
-  plot2data <- reactive({
-    plot2data <-
-      ddply(
-        TIGRFAM.mainrole.long,
-        ~ mainrole,
-        summarise,
-        mean = mean(value),
-        sd = sd(value)
-      )
-  })
+ 
   
   output$plot2 <- renderPlotly({
     plot2 <- ggplot(data = plot2data()) +
@@ -596,48 +342,14 @@ server <- function(input, output) {
     ggplotly(contextualplot)
   })
   
-  # plotheatmapdata <- reactive({
-  #   plotheatmapdata <-
-  #     KEGG.tpm[, c(1:20)]
-  # })
-  
+ 
   
   output$heatmap <- renderD3heatmap({
     d3heatmap(
-      scale(KEGG.tpm[, c(1:20)])
+      scale(KEGG.tpm[c(1:input$normCount), c(1:input$unifRange[2])])
     )
   })
   
-  
-  # InfoBoxes
-  output$diversityBox <- renderInfoBox({
-    infoBox(
-      "Average Diversity Index",
-      round(diversity.index(), digits = 3),
-      icon = icon("pie-chart"),
-      color = "navy",
-      fill = TRUE
-    )
-  })
-  
-  output$sampleBox <- renderInfoBox({
-    infoBox(
-      "Number of samples",
-      num.samples(),
-      icon = icon("list"),
-      color = "maroon",
-      fill = TRUE
-    )
-  })
-  output$statusBox <- renderInfoBox({
-    infoBox(
-      "Summary",
-      "80%",
-      icon = icon("thumbs-up", lib = "glyphicon"),
-      color = "green",
-      fill = TRUE
-    )
-  })
   
 }
 
