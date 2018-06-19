@@ -25,10 +25,7 @@ metadata.FILE <-
 KEGG.tpm <- read.delim(file = "../data/lmo2012_transect2014_redox2014.KEGG-pathway-module.tpm.tsv")
 eggNOG.tpm <- read.delim(file = "../data/lmo2012_transect2014_redox2014.eggNOG.tpm.tsv")
 
-
 envdata <- read.delim(file = "../data/lmo2012_transect2014_redox2014.env-data.tsv")
-# envdata.long <- envdata %>% 
-#   gather(c(lmo2012, redoxgradient2014, transect2014), key="sample", value="value")
 
 # sample groups
 
@@ -44,7 +41,7 @@ KEGG.tpm <- apply(KEGG.tpm, 2, as.numeric)
 KEGG.tpm <- as.matrix(KEGG.tpm)
 rownames(KEGG.tpm) <- names
 
-
+# environmental data
 
 metadata.FILE[, 1] <- as.factor(metadata.FILE[, 1])
 
@@ -108,8 +105,6 @@ ui <- dashboardPage(
         icon = icon("pencil-square-o")
       )
       
-      
-      
     )
   ),
   
@@ -117,7 +112,6 @@ ui <- dashboardPage(
   dashboardBody(
     tabItems(
       # First tab content
-      
       
       tabItem(tabName = "settings",
               h2("Settings"),
@@ -143,13 +137,10 @@ ui <- dashboardPage(
                     solidHeader = TRUE,
                     collapsible = TRUE,
                     
-                    # checkboxInput("lmo2012", "LMO station 2012", TRUE),
                     selectInput('lmo_dataset_list', 'Timepoints LMO 2012', lmo2012, multiple=TRUE, selectize=FALSE, selected = c("X120314", "X120322")),
                     
-                    # checkboxInput("transect2014", "Baltic Sea transect 2014", FALSE),
                     selectInput('transect_dataset_list', 'Stations Transect 2014', transect2014, multiple=TRUE, selectize=FALSE),
                     
-                    # checkboxInput("gradient2014", "Baltic Sea redox gradient 2014", FALSE),
                     selectInput('redox_dataset_list', 'Depths Redox gradient 2014', redoxgradient2014, multiple=TRUE, selectize=FALSE)
                     
                   )
@@ -265,7 +256,6 @@ ui <- dashboardPage(
                     solidHeader = TRUE,
                     collapsible = TRUE,
                     "Change some settings of the heatmap here.",
-                    # sliderInput("unifRange", "Columns", min = 1, max = ncol(KEGG.tpm), value = c(1, 15)),
                     numericInput("normCount", "Number of rows", 20)
                     
                   )
