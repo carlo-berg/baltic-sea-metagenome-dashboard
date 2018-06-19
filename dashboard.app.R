@@ -144,7 +144,7 @@ ui <- dashboardPage(
                     collapsible = TRUE,
                     
                     # checkboxInput("lmo2012", "LMO station 2012", TRUE),
-                    selectInput('lmo_dataset_list', 'Timepoints LMO 2012', lmo2012, multiple=TRUE, selectize=FALSE),
+                    selectInput('lmo_dataset_list', 'Timepoints LMO 2012', lmo2012, multiple=TRUE, selectize=FALSE, selected = c("X120314", "X120322")),
                     
                     # checkboxInput("transect2014", "Baltic Sea transect 2014", FALSE),
                     selectInput('transect_dataset_list', 'Stations Transect 2014', transect2014, multiple=TRUE, selectize=FALSE),
@@ -167,8 +167,7 @@ ui <- dashboardPage(
                     solidHeader = TRUE,
                     collapsible = TRUE,
                     
-                    radioButtons("annotation_data", "Annotation data", c("eggNOG" = "eggNOK", 
-                                                                         "KEGG" = "KEGG"))
+                    radioButtons("annotation_data", "Annotation data", c("KEGG" = "KEGG", "eggNOG" = "eggNOG"))
                     
                     
                   ), 
@@ -266,8 +265,8 @@ ui <- dashboardPage(
                     solidHeader = TRUE,
                     collapsible = TRUE,
                     "Change some settings of the heatmap here.",
-                    sliderInput("unifRange", "Columns", min = 1, max = ncol(KEGG.tpm), value = c(1, 15)),
-                    numericInput("normCount", "Rows", 20)
+                    # sliderInput("unifRange", "Columns", min = 1, max = ncol(KEGG.tpm), value = c(1, 15)),
+                    numericInput("normCount", "Number of rows", 20)
                     
                   )
                 )
@@ -418,8 +417,16 @@ server <- function(input, output) {
 # subsetting data interactively
   
   selectedData <- reactive({
-    KEGG.tpm[c(1:input$normCount), c(input$lmo_dataset_list, input$transect_dataset_list, input$redox_dataset_list)]
-  })
+    
+    if (input$annotation_data == "KEGG") {
+      selectedData <- KEGG.tpm[c(1:input$normCount), c(input$lmo_dataset_list, input$transect_dataset_list, input$redox_dataset_list)]
+    } else  
+    
+    if (input$annotation_data == "eggNOG") {
+      selectedData <- eggNOG.tpm[c(1:input$normCount), c(input$lmo_dataset_list, input$transect_dataset_list, input$redox_dataset_list)]
+    }
+  
+    })
   
 #datatable
   
