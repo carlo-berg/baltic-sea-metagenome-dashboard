@@ -415,30 +415,9 @@ server <- function(input, output) {
     read.csv(inFile$datapath, header = input$header)
   })
   
-  # checkboxes for data selection
-  output$value <- renderText({ input$somevalue })
-  output$value2 <- renderText({ input$somevalue2 })
-  
-  
-  output$plot1 <- renderPlotly({
-    plot1 <-  ggplot(data = plot1data()) +
-      geom_bar(aes(x = date, y = value, fill = mainrole), stat = "identity") +
-      theme(axis.text.x = element_text(angle = 90))
-    ggplotly(plot1)
-  })
-  
-  
-  output$plot2 <- renderPlotly({
-    plot2 <- ggplot(data = plot2data()) +
-      geom_bar(aes(y = mean, x = mainrole, group = mainrole), stat = "identity") +
-      theme(axis.text.x = element_text(angle = 90)) +
-      coord_flip()
-    ggplotly(plot2)
-  })
-  
 
-  # reading rf object and corresponding feature list
-  # correlation plot      
+# reading rf object and corresponding feature list
+# correlation plot      
   output$pred_corr <- renderPlotly({
     
     
