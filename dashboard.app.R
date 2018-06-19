@@ -20,8 +20,7 @@ library(randomForest)
 cols <- colorRampPalette(brewer.pal(10, "RdBu"))(256)
 
 # loading data ----
-metadata.FILE <-
-  read.delim(file = "../data/LMO.time.series.metadata.csv", stringsAsFactors = FALSE)
+
 KEGG.tpm <- read.delim(file = "../data/lmo2012_transect2014_redox2014.KEGG-pathway-module.tpm.tsv")
 eggNOG.tpm <- read.delim(file = "../data/lmo2012_transect2014_redox2014.eggNOG.tpm.tsv")
 
@@ -40,33 +39,6 @@ KEGG.tpm <- KEGG.tpm[,-1]
 KEGG.tpm <- apply(KEGG.tpm, 2, as.numeric)
 KEGG.tpm <- as.matrix(KEGG.tpm)
 rownames(KEGG.tpm) <- names
-
-# environmental data
-
-metadata.FILE[, 1] <- as.factor(metadata.FILE[, 1])
-
-metadata.FILE.melt <- melt(
-  metadata.FILE,
-  id.vars = c("SampleID"),
-  measure.vars = c(
-    "Temperature",
-    "DOC",
-    "Ammonium",
-    "Salinity",
-    "Chla",
-    "Nitrate",
-    "Phosphate",
-    "Silicate",
-    "TotalN",
-    "NP",
-    "BacterialAbundance",
-    "BacterialProduction",
-    "BacterialProduction.1"
-  )
-)
-
-metadata.FILE.melt[, 1] <-
-  as.Date(metadata.FILE.melt[, 1], format = "%y%m%d")
 
 
 
@@ -275,7 +247,7 @@ ui <- dashboardPage(
                   width = 8,
                   
                   box(
-                    plotlyOutput("contextual"),
+                    "Space for the environmental data.",
                     width = NULL,
                     title = "Contextual data plot",
                     solidHeader = TRUE,
@@ -433,30 +405,6 @@ server <- function(input, output) {
   }
   
   
-  # plot on action
-  
-  v <- reactiveValues(doPlot = FALSE)
-  
-  observeEvent(input$go, {
-    # 0 will be coerced to FALSE
-    # 1+ will be coerced to TRUE
-    v$doPlot <- input$go
-  })
-  
-  output$plot <- renderPlot({
-    if (v$doPlot == FALSE) return()
-    
-    isolate({
-      data <- if (input$tabset == "dashboard") {
-        runif(input$unifCount, input$unifRange[1], input$unifRange[2])
-      } else {
-        rnorm(input$normCount, input$normMean, input$normSd)
-      }
-      
-      hist(data)
-    })
-  })
-  
   # import csv file
   output$contents <- renderTable({
     inFile <- input$file1
@@ -470,17 +418,6 @@ server <- function(input, output) {
   # checkboxes for data selection
   output$value <- renderText({ input$somevalue })
   output$value2 <- renderText({ input$somevalue2 })
-  
-  
-  
-  plotcontextualdata <- reactive({
-    plotcontextualdata <-
-      metadata.FILE.melt[which(
-        metadata.FILE.melt[, "SampleID"] >= as.Date(input$dates[1], format = "%Y%m%d") &
-          metadata.FILE.melt[, "SampleID"] <= as.Date(input$dates[2], format = "%Y%m%d") &
-          metadata.FILE.melt[, "variable"] == input$nutrients
-      ), ]
-  })
   
   
   output$plot1 <- renderPlotly({
@@ -497,16 +434,6 @@ server <- function(input, output) {
       theme(axis.text.x = element_text(angle = 90)) +
       coord_flip()
     ggplotly(plot2)
-  })
-  
-  output$contextual <- renderPlotly({
-    contextualplot <- ggplot(na.omit(plotcontextualdata())) +
-      geom_line(aes(x = SampleID, y = value)) +
-      geom_point(aes(x = SampleID, y = value)) +
-      scale_x_date(limits = c(input$dates[1], input$dates[2])) + 
-      ylab("Measured values") +
-      xlab("Time")
-    ggplotly(contextualplot)
   })
   
 
