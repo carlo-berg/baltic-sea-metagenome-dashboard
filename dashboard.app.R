@@ -97,7 +97,7 @@ ui <- dashboardPage(
         icon = icon("database")
       ),
       menuItem(
-        "View data table",
+        "View & export data",
         tabName = "description",
         icon = icon("pencil-square-o")
       ),
@@ -432,10 +432,13 @@ server <- function(input, output) {
   
   {
     output$tbl = DT::renderDT(
-      selectedData(), options = list(lengthChange = FALSE,
-                                                                              dom = 'Bfrtip', 
-                                                                              buttons = I(c('colvis', 'copy', 'csv', 'excel'))),
-      extensions = 'Buttons'
+      selectedData(), 
+      extensions = c('Buttons', 'FixedColumns'),
+      options = list(scrollX = TRUE,
+                     fixedColumns = list(leftColumns = 1),
+                     lengthChange = FALSE,
+                     dom = 'Bfrtip',
+                     buttons = I(c('colvis', 'copy', 'csv', 'excel')))
     )
   }
   
