@@ -13,7 +13,6 @@ library(tidyverse)
 library(magrittr)
 library(randomForest)
 
-#
 # setwd("~/Transfer/shinydashboard/app/")
 
 # setting colors
@@ -83,8 +82,9 @@ ui <- dashboardPage(
   # body content ----
   dashboardBody(
     tabItems(
-      # First tab content
       
+      # First tab content
+
       tabItem(tabName = "settings",
               h2("Settings"),
               
@@ -104,7 +104,7 @@ ui <- dashboardPage(
                 column(
                   width = 4,
                   box(
-                    title = "1. Select sample group",
+                    title = "1. Select samples",
                     width = NULL,
                     solidHeader = TRUE,
                     collapsible = TRUE,
@@ -136,7 +136,7 @@ ui <- dashboardPage(
                   ), 
                   
                   box(
-                    title = "3. Select parameters to display",
+                    title = "3. Filter samples by parameter range",
                     width = NULL,
                     solidHeader = TRUE,
                     collapsible = TRUE,
@@ -177,12 +177,12 @@ ui <- dashboardPage(
                       solidHeader = TRUE,
                       collapsible = TRUE,
                       
-                      fileInput("file1", "Choose data File",
+                      fileInput("external_data_file", "Choose data File",
                                 accept = c(
                                   "text/csv",
                                   "text/comma-separated-values,text/plain",
                                   ".csv")),
-                      checkboxInput("somevalue", "include external sample", FALSE)
+                      checkboxInput("include_external", "include external sample", FALSE)
                   )
                   
                 )
@@ -228,7 +228,10 @@ ui <- dashboardPage(
                     solidHeader = TRUE,
                     collapsible = TRUE,
                     "Change some settings of the heatmap here.",
-                    numericInput("normCount", "Number of rows", 20)
+                    numericInput("normCount", "Number of rows", 20),
+                    "Clustering of..:",
+                    checkboxInput("cluster_samples", "samples", FALSE),
+                    checkboxInput("cluster_modules", "modules", TRUE)
                     
                   )
                 )
@@ -352,13 +355,7 @@ ui <- dashboardPage(
       
     ),
     
-    
-    fluidRow(
-      infoBoxOutput("diversityBox"),
-      infoBoxOutput("sampleBox"),
-      infoBoxOutput("statusBox")
-    ),
-    
+
     div(
       class = "footer",
       HTML(
@@ -374,23 +371,37 @@ ui <- dashboardPage(
 # BEGIN SERVER ###################################################
 server <- function(input, output) {
   
+# clustering yes/no
   
+  output$cluster_samples <- reactive({
   
-# subsetting data interactively
+    input$cluster_samples  
+  
+  })
+    
+ 
+  
+  # subsetting data interactively
   
   selectedData <- reactive({
     
     if (input$annotation_data == "KEGG") {
       selectedData <- KEGG.tpm[c(1:input$normCount), c(input$lmo_dataset_list, input$transect_dataset_list, input$redox_dataset_list)]
     } else  
+      
+      if (input$annotation_data == "eggNOG") {
+        selectedData <- eggNOG.tpm[c(1:input$normCount), c(input$lmo_dataset_list, input$transect_dataset_list, input$redox_dataset_list)]
+      }
     
-    if (input$annotation_data == "eggNOG") {
-      selectedData <- eggNOG.tpm[c(1:input$normCount), c(input$lmo_dataset_list, input$transect_dataset_list, input$redox_dataset_list)]
-    }
+    # # merge data with external sample
+    # if (input$include_external == TRUE) {
+    # selectedData <- left_join(selectedData, as.matrix(input$external_data))
+    # }
+    
+    
+  })
   
-    })
-  
-#datatable
+  #datatable
   
   {
     output$tbl = DT::renderDT(
@@ -405,73 +416,59 @@ server <- function(input, output) {
   }
   
   
-  # import csv file
-  output$contents <- renderTable({
-    inFile <- input$file1
-    
-    if (is.null(inFile))
-      return(NULL)
-    
-    read.csv(inFile$datapath, header = input$header)
-  })
-  
 
-# reading rf object and corresponding feature list
-# correlation plot      
+  
+  
+  # reading rf object and corresponding feature list
+  # correlation plot      
   output$pred_corr <- renderPlotly({
     
     
-  if (input$env_param == "Temp") { rf = readRDS("../data/predict/rf.cog.temperature.rds") }
-  if (input$env_param == "NH4") { rf = readRDS("../data/predict/rf.cog.nh4.rds") }
-  if (input$env_param == "Sal") { rf = readRDS("../data/predict/rf.cog.salinity.rds") }
-  if (input$env_param == "DOC") { rf = readRDS("../data/predict/rf.cog.doc.rds") }
-  
-  features = readRDS("../data/predict/feature-list.cog.rds")
-  
-  # reading count data
-  
-  tab <- read.delim("../data/predict/Transect2014_EggNOG.tpm.annotated.tsv")
-  id <- as.character(tab[,1])
-  counts = tab[,2:ncol(tab)]
-  
-  # sorting count data by the feature list
-  ix = match(features, id)
-  id = id[ix]
-  counts = counts[ix,]
-  
-  # do the predictions
-  pred = c()
-  #predict(rf, t(counts[,1]), type="response")
-  for (i in 1:ncol(counts)) {
-    pred[i] = predict(rf, t(counts[,i]), type="response")
-  }
-  pred
-  
-  # plotting correlation
-  envdata <- read.delim(file = "../data/lmo2012_transect2014_redox2014.env-data.tsv")
-  samples <- as.character(c("X", colnames(tab[,2:ncol(tab)])))
-
+    if (input$env_param == "Temp") { rf = readRDS("../data/predict/rf.cog.temperature.rds") }
+    if (input$env_param == "NH4") { rf = readRDS("../data/predict/rf.cog.nh4.rds") }
+    if (input$env_param == "Sal") { rf = readRDS("../data/predict/rf.cog.salinity.rds") }
+    if (input$env_param == "DOC") { rf = readRDS("../data/predict/rf.cog.doc.rds") }
     
-
-
-  
-
-  
-  env <- envdata[, samples] %>% 
-    filter(X == input$env_param) %>% 
-    select(-X)   
-  
-  measured <- as.numeric(t(env)[,1])
-  
-  pred_corr_plot <- ggplot() + geom_point(aes(x=measured, y=pred)) 
-  ggplotly(pred_corr_plot)
-  
-})  
+    features = readRDS("../data/predict/feature-list.cog.rds")
+    
+    # reading count data
+    
+    tab <- read.delim("../data/predict/Transect2014_EggNOG.tpm.annotated.tsv")
+    id <- as.character(tab[,1])
+    counts = tab[,2:ncol(tab)]
+    
+    # sorting count data by the feature list
+    ix = match(features, id)
+    id = id[ix]
+    counts = counts[ix,]
+    
+    # do the predictions
+    pred = c()
+    #predict(rf, t(counts[,1]), type="response")
+    for (i in 1:ncol(counts)) {
+      pred[i] = predict(rf, t(counts[,i]), type="response")
+    }
+    pred
+    
+    # plotting correlation
+    envdata <- read.delim(file = "../data/lmo2012_transect2014_redox2014.env-data.tsv")
+    samples <- as.character(c("X", colnames(tab[,2:ncol(tab)])))
+    
+    env <- envdata[, samples] %>% 
+      filter(X == input$env_param) %>% 
+      select(-X)   
+    
+    measured <- as.numeric(t(env)[,1])
+    
+    pred_corr_plot <- ggplot() + geom_point(aes(x=measured, y=pred)) 
+    ggplotly(pred_corr_plot)
+    
+  })  
   
   
   output$heatmap <- renderD3heatmap({
     d3heatmap(
-      scale(selectedData())
+      scale(selectedData()), Colv=input$cluster_samples, Rowv = input$cluster_modules
     )
   })
   
