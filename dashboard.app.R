@@ -72,23 +72,23 @@ ui <- dashboardPage(
     width = 300,
     sidebarMenu(
       
-      menuItem("Settings", tabName = "settings", icon = icon("bar-chart")),
+      menuItem("1. Settings", tabName = "settings", icon = icon("bar-chart")),
       
-      menuItem("Heatmap", tabName = "dashboard", icon = icon("bar-chart")),
+      menuItem("2. Heatmap", tabName = "dashboard", icon = icon("bar-chart")),
       
       menuItem(
-        "Environmental data",
+        "3. Environmental data",
         tabName = "contextual",
         icon = icon("database")
       ),
       menuItem(
-        "View & export data",
+        "4. View & export data",
         tabName = "description",
         icon = icon("pencil-square-o")
       ),
       
       menuItem(
-        "Random forest prediction",
+        "5. Random forest prediction",
         tabName = "predict",
         icon = icon("pencil-square-o")
       )
@@ -103,7 +103,7 @@ ui <- dashboardPage(
       # First tab content
 
       tabItem(tabName = "settings",
-              h2("Settings"),
+              h2("1. Settings"),
               
               fluidRow(
                 column(
@@ -121,11 +121,12 @@ ui <- dashboardPage(
                 column(
                   width = 4,
                   box(
-                    title = "1. Select samples",
+                    title = "A. Select samples",
                     width = NULL,
                     solidHeader = TRUE,
                     collapsible = TRUE,
-                    
+                    "Three datasets are available of which samples can be chosen here (A). In the following steps (C, D) you can filter the samples by ranges in environmental parameters or date.",
+                    tags$br(),tags$br(),
                     selectInput('lmo_dataset_list', 'Timepoints LMO 2012', lmo2012, multiple=TRUE, selectize=FALSE, selected = c("X120314", "X120322")),
                     
                     selectInput('transect_dataset_list', 'Stations Transect 2014', transect2014, multiple=TRUE, selectize=FALSE),
@@ -142,19 +143,20 @@ ui <- dashboardPage(
                   width = 4,
                   
                   box(
-                    title = "2. Select annotation data",
+                    title = "B. Select functional annotation",
                     width = NULL,
                     solidHeader = TRUE,
                     collapsible = TRUE,
                     
-                    radioButtons("annotation_data", "Annotation data", c("KEGG" = "KEGG", "eggNOG" = "eggNOG"))
+                    radioButtons("annotation_data", "TPM-normalized counts of:", c("KEGG metabolic pathway modules" = "KEGG", "eggNOGs" = "eggNOG"))
                     
                     
                   ), 
                   
                   box(
-                    title = "3. Filter samples by parameter range",
-                    "All criteria are applied together, NA values will be kept within each parameter.\n",
+                    title = "C. Filter samples by parameter range",
+                    "All criteria are applied together, samples with NA values in one parameter will be kept but may be excluded based on the filtering of the other parameters.",
+                    tags$br(),tags$br(),
                     width = NULL,
                     solidHeader = TRUE,
                     collapsible = TRUE,
@@ -175,7 +177,7 @@ ui <- dashboardPage(
                   
                   box(
                     
-                    title = "4. Select date range",
+                    title = "D. Filter samples by date range",
                     width = NULL,
                     solidHeader = TRUE,
                     collapsible = TRUE,
@@ -190,11 +192,13 @@ ui <- dashboardPage(
                     )
                   ),
                   
-                  box(title = "5. Upload external sample",
+                  box(title = "E. Upload external sample data",
                       width = NULL,
                       solidHeader = TRUE,
                       collapsible = TRUE,
                       
+                      "Tab-separated textfile. The first column must be the functional annotation category, every other column is one sample.",
+                      tags$br(), tags$br(),
                       fileInput("external_data_file", "Choose data File",
                                 accept = c(
                                   "text/csv",
@@ -215,7 +219,7 @@ ui <- dashboardPage(
       
       
       tabItem(tabName = "dashboard",
-              h2("Heatmap"),
+              h2("2. Heatmap"),
               fluidRow(
                 column(
                   width = 9,
@@ -241,14 +245,14 @@ ui <- dashboardPage(
                 column(
                   width = 3,
                   box(
-                    title = "Settings",
+                    title = "A. Settings",
                     width = NULL,
                     solidHeader = TRUE,
                     collapsible = TRUE,
                     selectInput('heatmap_modules', 'Select modules:', modules, multiple=TRUE, selectize=FALSE, selected = modules[c(1:20)]),
-                    "Clustering of..:",
-                    checkboxInput("cluster_samples", "samples", FALSE),
-                    checkboxInput("cluster_modules", "modules", TRUE)
+                    tags$b("Perform clustering of:"),
+                    checkboxInput("cluster_samples", "Samples", FALSE),
+                    checkboxInput("cluster_modules", "Modules", TRUE)
                     
                   )
                 )
@@ -261,7 +265,7 @@ ui <- dashboardPage(
       
       
       tabItem(tabName = "contextual",
-              h2("Contextual data"),
+              h2("3. Environmental data"),
               fluidRow(
                 column(
                   width = 8,
@@ -269,7 +273,7 @@ ui <- dashboardPage(
                   box(
                     "Space for the environmental data.",
                     width = NULL,
-                    title = "Contextual data plot",
+                    title = "Data plot",
                     solidHeader = TRUE,
                     collapsible = TRUE
                   )
@@ -279,7 +283,7 @@ ui <- dashboardPage(
                 column(
                   width = 4,
                   box(
-                    title = "Select data to display",
+                    title = "A. Select data to display",
                     width = NULL,
                     solidHeader = TRUE,
                     selectInput(
@@ -309,7 +313,7 @@ ui <- dashboardPage(
       
       
       tabItem(tabName = "description",
-              h2("Data table"),
+              h2("4. Data table"),
               
               column(
                 width = 12,
@@ -329,7 +333,7 @@ ui <- dashboardPage(
       
       
       tabItem(tabName = "predict",
-              h2("Random forest predictions"),
+              h2("5. Random forest prediction"),
               fluidRow(
                 column(
                   width = 8,
