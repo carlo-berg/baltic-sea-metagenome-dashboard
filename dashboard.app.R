@@ -24,6 +24,21 @@ KEGG.tpm <- read.delim(file = "../data/lmo2012_transect2014_redox2014.KEGG-pathw
 eggNOG.tpm <- read.delim(file = "../data/lmo2012_transect2014_redox2014.eggNOG.tpm.tsv")
 
 envdata <- read.delim(file = "../data/lmo2012_transect2014_redox2014.env-data.tsv")
+envdata_t <- envdata %>% 
+  t() 
+
+colnames(envdata_t) <- envdata_t[1,]
+envdata_t <- envdata_t[-1,]
+envdata_t <- as.data.frame(envdata_t) %>% 
+  mutate(samples=rownames(envdata_t))
+
+envdata_t[, "Sal"] <- as.numeric(as.character(envdata_t[, "Sal"]))
+envdata_t[, "Depth"] <- as.numeric(as.character(envdata_t[, "Depth"]))
+envdata_t[, "O2"] <- as.numeric(as.character(envdata_t[, "O2"]))
+envdata_t[, "Temp"] <- as.numeric(as.character(envdata_t[, "Temp"]))
+
+
+
 
 # sample groups
 
@@ -39,7 +54,9 @@ KEGG.tpm <- apply(KEGG.tpm, 2, as.numeric)
 KEGG.tpm <- as.matrix(KEGG.tpm)
 rownames(KEGG.tpm) <- names
 
-
+# list of KEGG modules or eggNOGS
+modules <- rownames(KEGG.tpm)
+eggNOGs <- as.vector(eggNOG.tpm[c(1:200), "X"])
 
 # BEGIN UI #############################################################################################
 
@@ -137,6 +154,7 @@ ui <- dashboardPage(
                   
                   box(
                     title = "3. Filter samples by parameter range",
+                    "All criteria are applied together, NA values will be kept within each parameter.\n",
                     width = NULL,
                     solidHeader = TRUE,
                     collapsible = TRUE,
@@ -227,8 +245,7 @@ ui <- dashboardPage(
                     width = NULL,
                     solidHeader = TRUE,
                     collapsible = TRUE,
-                    "Change some settings of the heatmap here.",
-                    numericInput("normCount", "Number of rows", 20),
+                    selectInput('heatmap_modules', 'Select modules:', modules, multiple=TRUE, selectize=FALSE, selected = modules[c(1:20)]),
                     "Clustering of..:",
                     checkboxInput("cluster_samples", "samples", FALSE),
                     checkboxInput("cluster_modules", "modules", TRUE)
@@ -383,31 +400,59 @@ server <- function(input, output) {
   
   # subsetting data interactively
   
+  filtered_samples <-reactive({
+
+  filtered_samples <- envdata_t %>% 
+    filter( is.na(Sal) | (Sal >= input$salinity[1] & Sal <= input$salinity[2]))  %>% 
+    filter( is.na(O2) | (O2 >= input$oxygen[1] & O2 <= input$oxygen[2]))  %>%
+    filter( is.na(Depth) | (Depth >= input$depth[1] & Depth <= input$depth[2]))  %>%
+    select(samples)
+  
+  
+  }) 
+  
+  
+  
+  
   selectedData <- reactive({
     
     if (input$annotation_data == "KEGG") {
-      selectedData <- KEGG.tpm[c(1:input$normCount), c(input$lmo_dataset_list, input$transect_dataset_list, input$redox_dataset_list)]
+      selectedData <- KEGG.tpm[c(input$heatmap_modules), intersect(filtered_samples()[,1], c(input$lmo_dataset_list, input$transect_dataset_list, input$redox_dataset_list))]
     } else  
       
       if (input$annotation_data == "eggNOG") {
         selectedData <- eggNOG.tpm[c(1:input$normCount), c(input$lmo_dataset_list, input$transect_dataset_list, input$redox_dataset_list)]
       }
+   
     
-    # # merge data with external sample
-    # if (input$include_external == TRUE) {
-    # selectedData <- left_join(selectedData, as.matrix(input$external_data))
-    # }
+  })
+  
+  
+  # module list to select
+  output$module_list <- reactive({
+    
+    if (input$annotation_data == "KEGG") {
+      module_list <- modules
+    } else  
+      
+      if (input$annotation_data == "eggNOG") {
+        module_list <- eggNOGs
+      }
     
     
   })
+  
   
   #datatable
   
   {
     output$tbl = DT::renderDT(
       selectedData(), 
-      extensions = c('Buttons', 'FixedColumns'),
+      extensions = c('Buttons', 'FixedColumns','Scroller'),
       options = list(scrollX = TRUE,
+                     deferRender = TRUE,
+                     scrollY = 500,
+                     scroller = TRUE,
                      fixedColumns = list(leftColumns = 1),
                      lengthChange = FALSE,
                      dom = 'Bfrtip',
