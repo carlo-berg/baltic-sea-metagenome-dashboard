@@ -36,6 +36,7 @@ envdata_t[, "Sal"] <- as.numeric(as.character(envdata_t[, "Sal"]))
 envdata_t[, "Depth"] <- as.numeric(as.character(envdata_t[, "Depth"]))
 envdata_t[, "O2"] <- as.numeric(as.character(envdata_t[, "O2"]))
 envdata_t[, "Temp"] <- as.numeric(as.character(envdata_t[, "Temp"]))
+envdata_t[, "NH4"] <- as.numeric(as.character(envdata_t[, "NH4"]))
 
 
 
@@ -160,9 +161,11 @@ ui <- dashboardPage(
                     width = NULL,
                     solidHeader = TRUE,
                     collapsible = TRUE,
-                    sliderInput("depth", "Depth:", min = 0, max = 439, value = c(0, 70)),
-                    sliderInput("salinity", "Salinity:", min = 0, max = 35, value = c(1, 15)),
-                    sliderInput("oxygen", "Oxygen:", min = 0, max = 350, value = c(200, 350))
+                    sliderInput("depth", "Depth:", min = 0, max = 439, value = c(floor(min(na.omit(envdata_t[, "Depth"]))), ceiling(max(na.omit(envdata_t[, "Depth"]))))),
+                    sliderInput("salinity", "Salinity:", min = 0, max = 35, value = c(floor(min(na.omit(envdata_t[, "Sal"]))), ceiling(max(na.omit(envdata_t[, "Sal"]))))),
+                    sliderInput("oxygen", "Oxygen:", min = 0, max = 350, value = c(floor(min(na.omit(envdata_t[, "O2"]))), ceiling(max(na.omit(envdata_t[, "O2"]))))),
+                    sliderInput("temp", "Temperature:", min = 0, max = 30, value = c(floor(min(na.omit(envdata_t[, "Temp"]))), ceiling(max(na.omit(envdata_t[, "Temp"]))))),
+                    sliderInput("nh4", "Ammonium:", min = 0, max = 50, value = c(floor(min(na.omit(envdata_t[, "NH4"]))), ceiling(max(na.omit(envdata_t[, "NH4"])))))
                     
                     
                   )
@@ -410,6 +413,8 @@ server <- function(input, output) {
     filter( is.na(Sal) | (Sal >= input$salinity[1] & Sal <= input$salinity[2]))  %>% 
     filter( is.na(O2) | (O2 >= input$oxygen[1] & O2 <= input$oxygen[2]))  %>%
     filter( is.na(Depth) | (Depth >= input$depth[1] & Depth <= input$depth[2]))  %>%
+    filter( is.na(Temp) | (Temp >= input$temp[1] & Temp <= input$temp[2]))  %>%
+    filter( is.na(NH4) | (NH4 >= input$nh4[1] & NH4 <= input$nh4[2]))  %>%
     select(samples)
   
   
