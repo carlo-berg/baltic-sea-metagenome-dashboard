@@ -37,6 +37,8 @@ envdata_t[, "Depth"] <- as.numeric(as.character(envdata_t[, "Depth"]))
 envdata_t[, "O2"] <- as.numeric(as.character(envdata_t[, "O2"]))
 envdata_t[, "Temp"] <- as.numeric(as.character(envdata_t[, "Temp"]))
 envdata_t[, "NH4"] <- as.numeric(as.character(envdata_t[, "NH4"]))
+envdata_t[, "NO3"] <- as.numeric(as.character(envdata_t[, "NO3"]))
+envdata_t[, "PO4"] <- as.numeric(as.character(envdata_t[, "PO4"]))
 
 
 
@@ -156,7 +158,7 @@ ui <- dashboardPage(
                   
                   box(
                     title = "C. Filter samples by parameter range",
-                    "All criteria are applied together, samples with NA values in one parameter will be kept but may be excluded based on the filtering of the other parameters.",
+                    "All criteria are applied together, samples with NA values in one parameter will be kept but may be excluded based on the filtering of the other parameters. By default, the sliders display the range in the data to include all samples.",
                     tags$br(),tags$br(),
                     width = NULL,
                     solidHeader = TRUE,
@@ -165,7 +167,9 @@ ui <- dashboardPage(
                     sliderInput("salinity", "Salinity:", min = 0, max = 35, value = c(floor(min(na.omit(envdata_t[, "Sal"]))), ceiling(max(na.omit(envdata_t[, "Sal"]))))),
                     sliderInput("oxygen", "Oxygen:", min = 0, max = 350, value = c(floor(min(na.omit(envdata_t[, "O2"]))), ceiling(max(na.omit(envdata_t[, "O2"]))))),
                     sliderInput("temp", "Temperature:", min = 0, max = 30, value = c(floor(min(na.omit(envdata_t[, "Temp"]))), ceiling(max(na.omit(envdata_t[, "Temp"]))))),
-                    sliderInput("nh4", "Ammonium:", min = 0, max = 50, value = c(floor(min(na.omit(envdata_t[, "NH4"]))), ceiling(max(na.omit(envdata_t[, "NH4"])))))
+                    sliderInput("nh4", "Ammonium:", min = 0, max = 20, value = c(floor(min(na.omit(envdata_t[, "NH4"]))), ceiling(max(na.omit(envdata_t[, "NH4"]))))),
+                    sliderInput("no3", "Nitrate:", min = 0, max = 20, value = c(floor(min(na.omit(envdata_t[, "NO3"]))), ceiling(max(na.omit(envdata_t[, "NO3"]))))),
+                    sliderInput("po4", "Phosphate:", min = 0, max = 10, value = c(floor(min(na.omit(envdata_t[, "PO4"]))), ceiling(max(na.omit(envdata_t[, "PO4"])))))
                     
                     
                   )
@@ -415,6 +419,8 @@ server <- function(input, output) {
     filter( is.na(Depth) | (Depth >= input$depth[1] & Depth <= input$depth[2]))  %>%
     filter( is.na(Temp) | (Temp >= input$temp[1] & Temp <= input$temp[2]))  %>%
     filter( is.na(NH4) | (NH4 >= input$nh4[1] & NH4 <= input$nh4[2]))  %>%
+    filter( is.na(NO3) | (NO3 >= input$no3[1] & NO3 <= input$no3[2]))  %>%
+    filter( is.na(PO4) | (PO4 >= input$po4[1] & PO4 <= input$po4[2]))  %>%
     select(samples)
   
   
