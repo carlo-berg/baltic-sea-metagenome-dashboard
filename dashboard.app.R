@@ -40,8 +40,7 @@ envdata_t[, "NH4"] <- as.numeric(as.character(envdata_t[, "NH4"]))
 envdata_t[, "NO3"] <- as.numeric(as.character(envdata_t[, "NO3"]))
 envdata_t[, "PO4"] <- as.numeric(as.character(envdata_t[, "PO4"]))
 
-
-
+envdata_t[, "Date"] <- as.Date(envdata_t[, "Date"], format="%d/%m/%y")
 
 # sample groups
 
@@ -164,8 +163,8 @@ ui <- dashboardPage(
                     solidHeader = TRUE,
                     collapsible = TRUE,
                     sliderInput("depth", "Depth:", min = 0, max = 439, value = c(floor(min(na.omit(envdata_t[, "Depth"]))), ceiling(max(na.omit(envdata_t[, "Depth"]))))),
-                    sliderInput("salinity", "Salinity:", min = 0, max = 35, value = c(floor(min(na.omit(envdata_t[, "Sal"]))), ceiling(max(na.omit(envdata_t[, "Sal"]))))),
-                    sliderInput("oxygen", "Oxygen:", min = 0, max = 350, value = c(floor(min(na.omit(envdata_t[, "O2"]))), ceiling(max(na.omit(envdata_t[, "O2"]))))),
+                    sliderInput("salinity", "Salinity:", min = 0, max = 40, value = c(floor(min(na.omit(envdata_t[, "Sal"]))), ceiling(max(na.omit(envdata_t[, "Sal"]))))),
+                    sliderInput("oxygen", "Oxygen:", min = 0, max = 450, value = c(floor(min(na.omit(envdata_t[, "O2"]))), ceiling(max(na.omit(envdata_t[, "O2"]))))),
                     sliderInput("temp", "Temperature:", min = 0, max = 30, value = c(floor(min(na.omit(envdata_t[, "Temp"]))), ceiling(max(na.omit(envdata_t[, "Temp"]))))),
                     sliderInput("nh4", "Ammonium:", min = 0, max = 20, value = c(floor(min(na.omit(envdata_t[, "NH4"]))), ceiling(max(na.omit(envdata_t[, "NH4"]))))),
                     sliderInput("no3", "Nitrate:", min = 0, max = 20, value = c(floor(min(na.omit(envdata_t[, "NO3"]))), ceiling(max(na.omit(envdata_t[, "NO3"]))))),
@@ -211,7 +210,7 @@ ui <- dashboardPage(
                                   "text/csv",
                                   "text/comma-separated-values,text/plain",
                                   ".csv")),
-                      checkboxInput("include_external", "include external sample", FALSE)
+                      checkboxInput("use_external_data_file", "include external sample", FALSE)
                   )
                   
                 )
@@ -421,6 +420,7 @@ server <- function(input, output) {
     filter( is.na(NH4) | (NH4 >= input$nh4[1] & NH4 <= input$nh4[2]))  %>%
     filter( is.na(NO3) | (NO3 >= input$no3[1] & NO3 <= input$no3[2]))  %>%
     filter( is.na(PO4) | (PO4 >= input$po4[1] & PO4 <= input$po4[2]))  %>%
+    filter(Date >= input$dates[1] & Date <= input$dates[2]) %>% 
     select(samples)
   
   
@@ -433,7 +433,22 @@ server <- function(input, output) {
     
     if (input$annotation_data == "KEGG") {
       selectedData <- KEGG.tpm[c(input$heatmap_modules), intersect(filtered_samples()[,1], c(input$lmo_dataset_list, input$transect_dataset_list, input$redox_dataset_list))]
-    } else  
+    
+      if (input$use_external_data_file == TRUE) {
+        ext_data <- read.csv(input$external_data_file$datapath,
+                         header = TRUE,
+                         sep = ",")
+        print(input$external_data_file)
+        row.names(ext_data) <- ext_data[, 1]
+        ext_data <- as.matrix(ext_data[-1])
+        selectedData <- merge(selectedData, ext_data, by="row.names", all.x = TRUE)
+        row.names(selectedData) <- selectedData[, 1]
+        selectedData <- selectedData %>% select(-"Row.names")
+      } else {
+        selectedData <- KEGG.tpm[c(input$heatmap_modules), intersect(filtered_samples()[,1], c(input$lmo_dataset_list, input$transect_dataset_list, input$redox_dataset_list))]
+      }
+      
+      } else  
       
       if (input$annotation_data == "eggNOG") {
         selectedData <- eggNOG.tpm[c(1:input$normCount), c(input$lmo_dataset_list, input$transect_dataset_list, input$redox_dataset_list)]
