@@ -167,8 +167,8 @@ ui <- dashboardPage(
                     sliderInput("oxygen", "Oxygen:", min = 0, max = 450, value = c(floor(min(na.omit(envdata_t[, "O2"]))), ceiling(max(na.omit(envdata_t[, "O2"]))))),
                     sliderInput("temp", "Temperature:", min = 0, max = 30, value = c(floor(min(na.omit(envdata_t[, "Temp"]))), ceiling(max(na.omit(envdata_t[, "Temp"]))))),
                     sliderInput("nh4", "Ammonium:", min = 0, max = 20, value = c(floor(min(na.omit(envdata_t[, "NH4"]))), ceiling(max(na.omit(envdata_t[, "NH4"]))))),
-                    sliderInput("no3", "Nitrate:", min = 0, max = 20, value = c(floor(min(na.omit(envdata_t[, "NO3"]))), ceiling(max(na.omit(envdata_t[, "NO3"]))))),
-                    sliderInput("po4", "Phosphate:", min = 0, max = 10, value = c(floor(min(na.omit(envdata_t[, "PO4"]))), ceiling(max(na.omit(envdata_t[, "PO4"])))))
+                    sliderInput("no3", "Nitrate:", min = 0, max = 15, value = c(floor(min(na.omit(envdata_t[, "NO3"]))), ceiling(max(na.omit(envdata_t[, "NO3"]))))),
+                    sliderInput("po4", "Phosphate:", min = 0, max = 15, value = c(floor(min(na.omit(envdata_t[, "PO4"]))), ceiling(max(na.omit(envdata_t[, "PO4"])))))
                     
                     
                   )
@@ -203,7 +203,7 @@ ui <- dashboardPage(
                       solidHeader = TRUE,
                       collapsible = TRUE,
                       
-                      "Tab-separated textfile. The first column must be the functional annotation category, every other column is one sample.",
+                      "Comma-separated textfile. The first column must be the functional annotation category, every other column is one sample.",
                       tags$br(), tags$br(),
                       fileInput("external_data_file", "Choose data File",
                                 accept = c(
@@ -235,7 +235,6 @@ ui <- dashboardPage(
                     solidHeader = TRUE,
                     collapsible = TRUE,
                     "Click and draw a rectangel to select specific samples in the heatmap. Re-loading may take a while."
-                    
                   ),
                   
                   box(
@@ -423,8 +422,9 @@ server <- function(input, output) {
     filter(Date >= input$dates[1] & Date <= input$dates[2]) %>% 
     select(samples)
   
-  
   }) 
+  
+  
   
   
   
@@ -456,6 +456,7 @@ server <- function(input, output) {
    
     
   })
+  
   
   
   # module list to select
@@ -547,6 +548,9 @@ server <- function(input, output) {
     )
   })
   
+  
+
+
   
 }
 
