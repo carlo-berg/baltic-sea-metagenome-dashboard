@@ -143,20 +143,9 @@ ui <- dashboardPage(
                 
                 column(
                   width = 4,
-                  
+          
                   box(
-                    title = "B. Select functional annotation",
-                    width = NULL,
-                    solidHeader = TRUE,
-                    collapsible = TRUE,
-                    
-                    radioButtons("annotation_data", "TPM-normalized counts of:", c("KEGG metabolic pathway modules" = "KEGG", "eggNOGs" = "eggNOG"))
-                    
-                    
-                  ), 
-                  
-                  box(
-                    title = "C. Filter samples by parameter range",
+                    title = "B. Filter samples by parameter range",
                     "All criteria are applied together, samples with NA values in one parameter will be kept but may be excluded based on the filtering of the other parameters. By default, the sliders display the range in the data to include all samples.",
                     tags$br(),tags$br(),
                     width = NULL,
@@ -183,7 +172,7 @@ ui <- dashboardPage(
                   
                   box(
                     
-                    title = "D. Filter samples by date range",
+                    title = "C. Filter samples by date range",
                     width = NULL,
                     solidHeader = TRUE,
                     collapsible = TRUE,
@@ -197,19 +186,30 @@ ui <- dashboardPage(
                       max = "2014-12-31"
                     )
                   ),
+                  box(
+                    title = "D. Select functional annotation",
+                    width = NULL,
+                    solidHeader = TRUE,
+                    collapsible = TRUE,
+                    
+                    radioButtons("annotation_data", "TPM-normalized counts of:", c("KEGG metabolic pathway modules" = "KEGG", "eggNOGs" = "eggNOG"))
+                    
+                    
+                  ),
                   
                   box(title = "E. Upload external sample data",
                       width = NULL,
                       solidHeader = TRUE,
                       collapsible = TRUE,
                       
-                      "Comma-separated textfile. The first column must be the functional annotation category, every other column is one sample.",
+                      "Tab-separated textfile. The first column must be the functional annotation category, every other column is one sample.",
                       tags$br(), tags$br(),
-                      fileInput("external_data_file", "Choose data File",
-                                accept = c(
-                                  "text/csv",
-                                  "text/comma-separated-values,text/plain",
-                                  ".csv")),
+                      fileInput("external_data_file", "Choose data File"#,
+                                # accept = c(
+                                #   "text/csv",
+                                #   "text/comma-separated-values,text/plain",
+                                #   ".tsv")
+                                ),
                       checkboxInput("use_external_data_file", "include external sample", FALSE)
                   )
                   
@@ -319,7 +319,7 @@ ui <- dashboardPage(
       
       tabItem(tabName = "description",
               h2("4. Data table"),
-              
+              fluidRow( 
               column(
                 width = 12,
                 box(
@@ -334,6 +334,7 @@ ui <- dashboardPage(
                   width = NULL,
                   DTOutput('tbl')
                 )
+              )
               )),
       
       
@@ -341,14 +342,24 @@ ui <- dashboardPage(
               h2("5. Random forest prediction"),
               fluidRow(
                 column(
+                  width = 12,
+                  box(title = "Information",
+                      width = NULL,
+                      solidHeader = TRUE,
+                      collapsible = TRUE,
+                      "If you uploaded an external data file, environmental parameters will be predicted for the samples based on the funtional annotation abundances." 
+                  )
+                )),
+              
+              fluidRow(
+                column(
                   width = 8,
                   
                   box(
-                    plotlyOutput("pred_corr"),
-                    width = NULL,
-                    title = "Correlation plot measured vs. predicted",
+                    title = "Predicted environmental parameters",
                     solidHeader = TRUE,
-                    collapsible = TRUE
+                    width = NULL,
+                    DTOutput('tbl_pred')
                   )
                   
                 ),
@@ -382,12 +393,32 @@ ui <- dashboardPage(
     ),
     
 
-    div(
-      class = "footer",
-      HTML(
-        "Baltic Sea metagenome dashboard. <a href=mailto:carlo.berg@scilifelab.se>carlo.berg@scilifelab.se</a>"
-      )
-    )
+    
+    
+    
+    
+    
+    
+    
+    fluidRow(
+      column(
+        width = 12,
+        box(width = NULL,
+            solidHeader = FALSE,
+            collapsible = FALSE,
+            div(
+              class = "footer",
+              HTML("Baltic Sea metagenome dashboard. Carlo Berg, Anders F. Andersson and the BONUS BLUEPRINT project. <br><a href=http://edu.cberg.de>http://edu.cberg.de</a> | <a href=mailto:cb@edu.cberg.de>cb@edu.cberg.de</a><br>&nbsp;<br>")
+            ),
+            img(src='img/eu.png', align = "left"),
+            "  ",
+            img(src='img/bonus.png', align = "left"),
+            "  ",
+            img(src='img/scilifelab.png', align = "left") 
+        )
+      ))
+    
+    
     
   )
   
@@ -435,9 +466,11 @@ server <- function(input, output) {
       selectedData <- KEGG.tpm[c(input$heatmap_modules), intersect(filtered_samples()[,1], c(input$lmo_dataset_list, input$transect_dataset_list, input$redox_dataset_list))]
     
       if (input$use_external_data_file == TRUE) {
-        ext_data <- read.csv(input$external_data_file$datapath,
-                         header = TRUE,
-                         sep = ",")
+        ext_data <- read.delim(input$external_data_file$datapath#,
+                         # header = TRUE,
+                         # sep = "\t"
+                         )
+        
         print(input$external_data_file)
         row.names(ext_data) <- ext_data[, 1]
         ext_data <- as.matrix(ext_data[-1])
@@ -497,19 +530,20 @@ server <- function(input, output) {
   
   # reading rf object and corresponding feature list
   # correlation plot      
-  output$pred_corr <- renderPlotly({
+  pred_corr <- reactive({
     
     
-    if (input$env_param == "Temp") { rf = readRDS("../data/predict/rf.cog.temperature.rds") }
-    if (input$env_param == "NH4") { rf = readRDS("../data/predict/rf.cog.nh4.rds") }
-    if (input$env_param == "Sal") { rf = readRDS("../data/predict/rf.cog.salinity.rds") }
-    if (input$env_param == "DOC") { rf = readRDS("../data/predict/rf.cog.doc.rds") }
+    if (input$env_param == "Temp") { rf = readRDS("../data/predict/rf.kegg.temperature.rds") }
+    if (input$env_param == "NH4") { rf = readRDS("../data/predict/rf.kegg.nh4.rds") }
+    if (input$env_param == "Sal") { rf = readRDS("../data/predict/rf.kegg.salinity.rds") }
+    if (input$env_param == "DOC") { rf = readRDS("../data/predict/rf.kegg.doc.rds") }
     
-    features = readRDS("../data/predict/feature-list.cog.rds")
+    features = readRDS("../data/predict/feature-list.kegg.rds")
     
     # reading count data
     
-    tab <- read.delim("../data/predict/Transect2014_EggNOG.tpm.annotated.tsv")
+    # tab <- read.delim("../data/predict/Transect2014_EggNOG.tpm.annotated.tsv")
+    tab <- read.delim(input$external_data_file$datapath)
     id <- as.character(tab[,1])
     counts = tab[,2:ncol(tab)]
     
@@ -524,23 +558,26 @@ server <- function(input, output) {
     for (i in 1:ncol(counts)) {
       pred[i] = predict(rf, t(counts[,i]), type="response")
     }
-    pred
+    # pred
+    temp_df <- data.frame(colnames(tab[-1]), pred)
+    colnames(temp_df) <- c("sample", "predicted_value")
     
-    # plotting correlation
-    envdata <- read.delim(file = "../data/lmo2012_transect2014_redox2014.env-data.tsv")
-    samples <- as.character(c("X", colnames(tab[,2:ncol(tab)])))
-    
-    env <- envdata[, samples] %>% 
-      filter(X == input$env_param) %>% 
-      select(-X)   
-    
-    measured <- as.numeric(t(env)[,1])
-    
-    pred_corr_plot <- ggplot() + geom_point(aes(x=measured, y=pred)) 
-    ggplotly(pred_corr_plot)
+    pred_corr <- temp_df
     
   })  
   
+  output$tbl_pred = DT::renderDT(
+    pred_corr(), 
+    extensions = c('Buttons', 'FixedColumns','Scroller'),
+    options = list(scrollX = TRUE,
+                   deferRender = TRUE,
+                   scrollY = 500,
+                   scroller = TRUE,
+                   fixedColumns = list(leftColumns = 1),
+                   lengthChange = FALSE,
+                   dom = 'Bfrtip',
+                   buttons = I(c('copy', 'csv', 'excel')))
+  )
   
   output$heatmap <- renderD3heatmap({
     d3heatmap(
