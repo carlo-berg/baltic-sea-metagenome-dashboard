@@ -34,11 +34,13 @@ envdata_t <- as.data.frame(envdata_t) %>%
 
 envdata_t[, "Sal"] <- as.numeric(as.character(envdata_t[, "Sal"]))
 envdata_t[, "Depth"] <- as.numeric(as.character(envdata_t[, "Depth"]))
+envdata_t[, "DOC"] <- as.numeric(as.character(envdata_t[, "DOC"]))
 envdata_t[, "O2"] <- as.numeric(as.character(envdata_t[, "O2"]))
 envdata_t[, "Temp"] <- as.numeric(as.character(envdata_t[, "Temp"]))
 envdata_t[, "NH4"] <- as.numeric(as.character(envdata_t[, "NH4"]))
 envdata_t[, "NO3"] <- as.numeric(as.character(envdata_t[, "NO3"]))
 envdata_t[, "PO4"] <- as.numeric(as.character(envdata_t[, "PO4"]))
+envdata_t[, "Chla"] <- as.numeric(as.character(envdata_t[, "Chla"]))
 
 envdata_t[, "Date"] <- as.Date(envdata_t[, "Date"], format="%d/%m/%y")
 
@@ -157,7 +159,8 @@ ui <- dashboardPage(
                     sliderInput("temp", "Temperature:", min = 0, max = 30, value = c(floor(min(na.omit(envdata_t[, "Temp"]))), ceiling(max(na.omit(envdata_t[, "Temp"]))))),
                     sliderInput("nh4", "Ammonium:", min = 0, max = 20, value = c(floor(min(na.omit(envdata_t[, "NH4"]))), ceiling(max(na.omit(envdata_t[, "NH4"]))))),
                     sliderInput("no3", "Nitrate:", min = 0, max = 15, value = c(floor(min(na.omit(envdata_t[, "NO3"]))), ceiling(max(na.omit(envdata_t[, "NO3"]))))),
-                    sliderInput("po4", "Phosphate:", min = 0, max = 15, value = c(floor(min(na.omit(envdata_t[, "PO4"]))), ceiling(max(na.omit(envdata_t[, "PO4"])))))
+                    sliderInput("po4", "Phosphate:", min = 0, max = 15, value = c(floor(min(na.omit(envdata_t[, "PO4"]))), ceiling(max(na.omit(envdata_t[, "PO4"]))))),
+                    sliderInput("chla", "Chlorophyll a:", min = 0, max = 10, value = c(floor(min(na.omit(envdata_t[, "Chla"]))), ceiling(max(na.omit(envdata_t[, "Chla"])))))
                     
                     
                   )
@@ -277,9 +280,16 @@ ui <- dashboardPage(
                   width = 8,
                   
                   box(
-                    "This part is not finished yet.",
+                    "Environmental data for the samples selected in the settings tab is displayed here. Note that values may be missing for some of the samples. Chose the environmental parameter from the dropdown menu on the right.",
                     width = NULL,
-                    title = "Data plot",
+                    title = "Information",
+                    solidHeader = TRUE,
+                    collapsible = TRUE
+                  ), 
+                  box(
+                    plotlyOutput("contextual"),
+                    width = NULL,
+                    title = "Environmental data plot",
                     solidHeader = TRUE,
                     collapsible = TRUE
                   )
@@ -296,19 +306,12 @@ ui <- dashboardPage(
                       inputId = "nutrients",
                       label = "Variable:",
                       choices = c(
-                        "Nitrate",
-                        "Phosphate",
-                        "NP",
-                        "Temperature",
+                        "Temp",
                         "DOC",
-                        "Ammonium",
-                        "Salinity",
-                        "Chla",
-                        "Silicate",
-                        "TotalN",
-                        "BacterialAbundance",
-                        "BacterialProduction",
-                        "BacterialProduction.1"
+                        "NH4",
+                        "O2",
+                        "Sal",
+                        "Chla"
                       ),
                       selected = "Temperature"
                     )
@@ -378,7 +381,8 @@ ui <- dashboardPage(
                         "Temp",
                         "NH4",
                         "Sal",
-                        "DOC"
+                        "DOC",
+                        "Chla"
                       ),
                       selected = "Temp"
                     )
@@ -451,6 +455,7 @@ server <- function(input, output) {
     filter( is.na(NH4) | (NH4 >= input$nh4[1] & NH4 <= input$nh4[2]))  %>%
     filter( is.na(NO3) | (NO3 >= input$no3[1] & NO3 <= input$no3[2]))  %>%
     filter( is.na(PO4) | (PO4 >= input$po4[1] & PO4 <= input$po4[2]))  %>%
+    filter( is.na(Chla) | (Chla >= input$chla[1] & Chla <= input$chla[2]))  %>%
     filter(Date >= input$dates[1] & Date <= input$dates[2]) %>% 
     select(samples)
   
@@ -526,7 +531,21 @@ server <- function(input, output) {
   }
   
   
-
+ # environmental data plots
+  output$contextual <- renderPlotly({
+    
+    envdata_t_plot <- envdata_t %>% 
+      filter(samples %in% c(input$lmo_dataset_list, input$transect_dataset_list, input$redox_dataset_list))
+    
+    contextualplot <- ggplot(envdata_t_plot) +
+      geom_line(aes(x = samples, y = envdata_t_plot[, input$nutrients])) +
+      geom_point(aes(x = samples, y = envdata_t_plot[, input$nutrients])) +
+      # scale_x_date(limits = c(input$dates[1], input$dates[2])) + 
+      ylab("Concentration or level") +
+      xlab("Sample") +
+      ggtitle(input$nutrients) 
+    ggplotly(contextualplot)
+  })
   
   
   # reading rf object and corresponding feature list
@@ -538,6 +557,7 @@ server <- function(input, output) {
     if (input$env_param == "NH4") { rf = readRDS("../data/predict/rf.kegg.nh4.rds") }
     if (input$env_param == "Sal") { rf = readRDS("../data/predict/rf.kegg.salinity.rds") }
     if (input$env_param == "DOC") { rf = readRDS("../data/predict/rf.kegg.doc.rds") }
+    if (input$env_param == "Chla") { rf = readRDS("../data/predict/rf.kegg.chla.rds") }
     
     features = readRDS("../data/predict/feature-list.kegg.rds")
     
