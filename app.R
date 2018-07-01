@@ -84,7 +84,7 @@ ui <- dashboardPage(
         icon = icon("bar-chart")
       ),
       menuItem(
-        "4. View & export data",
+        "4. View and export count data",
         tabName = "description",
         icon = icon("save", lib = "glyphicon")
       ),
@@ -208,8 +208,8 @@ ui <- dashboardPage(
                                 accept = c(
                                   "text/tab-separated-values,text/plain",
                                   ".tsv")
-                                ),
-                      checkboxInput("use_external_data_file", "include external sample", FALSE)
+                                )
+                      
                   )
                   
                 )
@@ -256,7 +256,9 @@ ui <- dashboardPage(
                     selectInput('heatmap_modules', 'Select modules:', modules, multiple=TRUE, selectize=FALSE, selected = modules[c(1:20)]),
                     tags$b("Perform clustering of:"),
                     checkboxInput("cluster_samples", "Samples", FALSE),
-                    checkboxInput("cluster_modules", "Modules", TRUE)
+                    checkboxInput("cluster_modules", "Modules", TRUE),
+                    tags$b("External uploaded sample:"),
+                    checkboxInput("use_external_data_file", "include", FALSE)
                     
                   )
                 )
@@ -275,7 +277,7 @@ ui <- dashboardPage(
                   width = 8,
                   
                   box(
-                    "Space for the environmental data.",
+                    "This part is not finished yet.",
                     width = NULL,
                     title = "Data plot",
                     solidHeader = TRUE,
@@ -338,7 +340,7 @@ ui <- dashboardPage(
       
       
       tabItem(tabName = "predict",
-              h2("5. Random forest prediction of environmental parameters from metagenomic data"),
+              h2("5. Prediction of environmental parameters from metagenomic data"),
               fluidRow(
                 column(
                   width = 12,
@@ -346,7 +348,7 @@ ui <- dashboardPage(
                       width = NULL,
                       solidHeader = TRUE,
                       collapsible = TRUE,
-                      "If you uploaded an external data file, environmental parameters will be predicted for the samples based on the funtional annotation abundances." 
+                      "If you uploaded an external data file, environmental parameters will be predicted using a random forest model that is trained with the Baltic Sea metagenomic data. Select the parameters that you want values to be predicted for from the dropdown menu on the right." 
                   )
                 )),
               
@@ -355,7 +357,7 @@ ui <- dashboardPage(
                   width = 8,
                   
                   box(
-                    title = "Predicted environmental parameters",
+                    title = "Table of predicted values",
                     solidHeader = TRUE,
                     width = NULL,
                     DTOutput('tbl_pred')
@@ -407,7 +409,7 @@ ui <- dashboardPage(
             collapsible = FALSE,
             div(
               class = "footer",
-              HTML("Baltic Sea metagenome dashboard. Carlo Berg, Anders F. Andersson and the BONUS BLUEPRINT project. <br><a href=http://edu.cberg.de>http://edu.cberg.de</a> | <a href=mailto:cb@edu.cberg.de>cb@edu.cberg.de</a><br>&nbsp;<br>")
+              HTML("Baltic Sea metagenome dashboard. Carlo Berg (<a href=http://edu.cberg.de>http://edu.cberg.de</a> | <a href=mailto:cb@edu.cberg.de>cb@edu.cberg.de</a>), Anders F. Andersson and the <a href=https://blueprint-project.org/>BONUS BLUEPRINT</a> project.<br>The BONUS BLUEPRINT project has received funding from BONUS (Art 185), funded jointly by the EU and the national funding institutions of Denmark, Sweden, Germany, Finland, and Estonia.")
             ),
             img(src='img/eu.png', align = "left"),
             "  ",
