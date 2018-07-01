@@ -73,26 +73,26 @@ ui <- dashboardPage(
   dashboardSidebar(
     width = 300,
     sidebarMenu(
+      # icons from https://getbootstrap.com/docs/3.3/components/
+      menuItem("1. Settings", tabName = "settings", icon = icon("cog", lib = "glyphicon")),
       
-      menuItem("1. Settings", tabName = "settings", icon = icon("bar-chart")),
-      
-      menuItem("2. Heatmap", tabName = "dashboard", icon = icon("bar-chart")),
+      menuItem("2. Heatmap", tabName = "dashboard", icon = icon("equalizer", lib = "glyphicon")),
       
       menuItem(
         "3. Environmental data",
         tabName = "contextual",
-        icon = icon("database")
+        icon = icon("bar-chart")
       ),
       menuItem(
         "4. View & export data",
         tabName = "description",
-        icon = icon("pencil-square-o")
+        icon = icon("save", lib = "glyphicon")
       ),
       
       menuItem(
-        "5. Random forest prediction",
+        "5. Prediction of env. parameters",
         tabName = "predict",
-        icon = icon("pencil-square-o")
+        icon = icon("tree-deciduous", lib = "glyphicon")
       )
       
     )
@@ -338,7 +338,7 @@ ui <- dashboardPage(
       
       
       tabItem(tabName = "predict",
-              h2("5. Random forest prediction"),
+              h2("5. Random forest prediction of environmental parameters from metagenomic data"),
               fluidRow(
                 column(
                   width = 12,
