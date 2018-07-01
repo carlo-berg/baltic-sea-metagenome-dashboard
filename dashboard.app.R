@@ -45,7 +45,7 @@ envdata_t[, "Date"] <- as.Date(envdata_t[, "Date"], format="%d/%m/%y")
 # sample groups
 
 lmo2012 <- colnames(envdata[c(2:34)])
-transect2014 <- colnames(envdata[c(35:78)])
+transect2014 <- colnames(envdata[c(35:64,73:76)])
 redoxgradient2014 <- colnames(envdata[c(65:72, 77, 78)])
 
 # preparing data ----
@@ -129,11 +129,11 @@ ui <- dashboardPage(
                     collapsible = TRUE,
                     "Three datasets are available of which samples can be chosen here (A). In the following steps (C, D) you can filter the samples by ranges in environmental parameters or date.",
                     tags$br(),tags$br(),
-                    selectInput('lmo_dataset_list', 'Timepoints LMO 2012', lmo2012, multiple=TRUE, selectize=FALSE, selected = c("X120314", "X120322")),
+                    selectInput('lmo_dataset_list', 'Timepoints LMO 2012', lmo2012, multiple=TRUE, selectize=FALSE, selected = lmo2012[c(1:2)]),
                     
-                    selectInput('transect_dataset_list', 'Stations Transect 2014', transect2014, multiple=TRUE, selectize=FALSE),
+                    selectInput('transect_dataset_list', 'Stations Transect 2014', transect2014, multiple=TRUE, selectize=FALSE, selected = transect2014[c(1:2)]),
                     
-                    selectInput('redox_dataset_list', 'Depths Redox gradient 2014', redoxgradient2014, multiple=TRUE, selectize=FALSE)
+                    selectInput('redox_dataset_list', 'Depths Redox gradient 2014', redoxgradient2014, multiple=TRUE, selectize=FALSE,selected = redoxgradient2014[c(1:2)])
                     
                   )
                   
@@ -204,11 +204,10 @@ ui <- dashboardPage(
                       
                       "Tab-separated textfile. The first column must be the functional annotation category, every other column is one sample.",
                       tags$br(), tags$br(),
-                      fileInput("external_data_file", "Choose data File"#,
-                                # accept = c(
-                                #   "text/csv",
-                                #   "text/comma-separated-values,text/plain",
-                                #   ".tsv")
+                      fileInput("external_data_file", "Choose data File",
+                                accept = c(
+                                  "text/tab-separated-values,text/plain",
+                                  ".tsv")
                                 ),
                       checkboxInput("use_external_data_file", "include external sample", FALSE)
                   )
@@ -556,7 +555,7 @@ server <- function(input, output) {
     pred = c()
     #predict(rf, t(counts[,1]), type="response")
     for (i in 1:ncol(counts)) {
-      pred[i] = predict(rf, t(counts[,i]), type="response")
+      pred[i] = round(predict(rf, t(counts[,i]), type="response"), digits = 3)
     }
     # pred
     temp_df <- data.frame(colnames(tab[-1]), pred)
