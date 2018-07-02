@@ -288,6 +288,8 @@ ui <- dashboardPage(
                   ), 
                   box(
                     plotlyOutput("contextual"),
+                    "Below the same plot with flipped coordinates (suited for the redox gradient samples).",
+                    plotlyOutput("contextual_redox"),
                     width = NULL,
                     title = "Environmental data plot",
                     solidHeader = TRUE,
@@ -299,7 +301,7 @@ ui <- dashboardPage(
                 column(
                   width = 4,
                   box(
-                    title = "A. Select data to display",
+                    title = "A. Select environmental parameter",
                     width = NULL,
                     solidHeader = TRUE,
                     selectInput(
@@ -546,6 +548,24 @@ server <- function(input, output) {
       ggtitle(input$nutrients) 
     ggplotly(contextualplot)
   })
+  
+  output$contextual_redox <- renderPlotly({
+    
+    envdata_t_plot <- envdata_t %>% 
+      filter(samples %in% c(input$lmo_dataset_list, input$transect_dataset_list, input$redox_dataset_list))
+    
+    contextual_redoxplot <- ggplot(envdata_t_plot) +
+      geom_line(aes(x = Depth, y = envdata_t_plot[, input$nutrients])) +
+      geom_point(aes(x = Depth, y = envdata_t_plot[, input$nutrients])) +
+      # scale_x_date(limits = c(input$dates[1], input$dates[2])) + 
+      ylab("Concentration or level") +
+      xlab("Depth") +
+      coord_flip() +
+      scale_x_reverse() + 
+      ggtitle(input$nutrients) 
+    ggplotly(contextual_redoxplot)
+  })
+  
   
   
   # reading rf object and corresponding feature list
