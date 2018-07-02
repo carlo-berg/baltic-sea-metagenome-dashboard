@@ -116,7 +116,7 @@ ui <- dashboardPage(
                       width = NULL,
                       solidHeader = TRUE,
                       collapsible = TRUE,
-                      "Choose here samples after specific categories or upload an external sample file to compare to the metagenomic data."
+                      "Three datasets are available of which samples can be chosen here (A). In the following steps (B, C) you can filter the samples by ranges in environmental parameters or date. You can also upload an external data file to be displayed in the heatmap along with the selected data and to be used to predict environmental parameters using a random forest model that was trained with the Baltic Sea metagenomic data."
                   )
                 )),
               
@@ -129,8 +129,7 @@ ui <- dashboardPage(
                     width = NULL,
                     solidHeader = TRUE,
                     collapsible = TRUE,
-                    "Three datasets are available of which samples can be chosen here (A). In the following steps (C, D) you can filter the samples by ranges in environmental parameters or date.",
-                    tags$br(),tags$br(),
+                    
                     selectInput('lmo_dataset_list', 'Timepoints LMO 2012', lmo2012, multiple=TRUE, selectize=FALSE, selected = lmo2012[c(1:2)]),
                     
                     selectInput('transect_dataset_list', 'Stations Transect 2014', transect2014, multiple=TRUE, selectize=FALSE, selected = transect2014[c(1:2)]),
@@ -190,7 +189,7 @@ ui <- dashboardPage(
                     )
                   ),
                   box(
-                    title = "D. Select functional annotation",
+                    title = "D. Choose functional annotation",
                     width = NULL,
                     solidHeader = TRUE,
                     collapsible = TRUE,
@@ -200,7 +199,7 @@ ui <- dashboardPage(
                     
                   ),
                   
-                  box(title = "E. Upload external sample data",
+                  box(title = "E. Upload external data file",
                       width = NULL,
                       solidHeader = TRUE,
                       collapsible = TRUE,
@@ -236,7 +235,7 @@ ui <- dashboardPage(
                     width = NULL,
                     solidHeader = TRUE,
                     collapsible = TRUE,
-                    "Click and draw a rectangel to select specific samples in the heatmap. Re-loading may take a while."
+                    "The data that was filtered or uploaded under the settings tab can be displayed here in a heatmap. Click and draw a rectangel to zoom into the heatmap. Clustering can be applied to the samples and/or the functional categories. Note that by default only 20 funtional categories are displayed but you can choose more from the selection box. Re-loading may take a while. "
                   ),
                   
                   box(
@@ -256,7 +255,7 @@ ui <- dashboardPage(
                     width = NULL,
                     solidHeader = TRUE,
                     collapsible = TRUE,
-                    selectInput('heatmap_modules', 'Select modules:', modules, multiple=TRUE, selectize=FALSE, selected = modules[c(1:20)]),
+                    selectInput('heatmap_modules', 'Select functional categories:', modules, multiple=TRUE, selectize=FALSE, selected = modules[c(1:20)]),
                     tags$b("Perform clustering of:"),
                     checkboxInput("cluster_samples", "Samples", FALSE),
                     checkboxInput("cluster_modules", "Modules", TRUE),
@@ -353,7 +352,7 @@ ui <- dashboardPage(
                       width = NULL,
                       solidHeader = TRUE,
                       collapsible = TRUE,
-                      "If you uploaded an external data file, environmental parameters will be predicted using a random forest model that is trained with the Baltic Sea metagenomic data. Select the parameters that you want values to be predicted for from the dropdown menu on the right." 
+                      "If you uploaded an external data file, environmental parameters will be predicted using a random forest model that is trained with the Baltic Sea metagenomic data. Select the parameters that you want values to be predicted for from the dropdown menu on the right. If you see a red error message your external data file was not uploaded or is formatted incorrectly." 
                   )
                 )),
               
