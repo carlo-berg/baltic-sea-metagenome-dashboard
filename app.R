@@ -20,10 +20,10 @@ cols <- colorRampPalette(brewer.pal(10, "RdBu"))(256)
 
 # loading data ----
 
-KEGG.tpm <- read.delim(file = "../data/lmo2012_transect2014_redox2014.KEGG-pathway-module.tpm.tsv")
-eggNOG.tpm <- read.delim(file = "../data/lmo2012_transect2014_redox2014.eggNOG.tpm.tsv")
+KEGG.tpm <- read.delim(file = "data/lmo2012_transect2014_redox2014.KEGG-pathway-module.tpm.tsv")
+eggNOG.tpm <- read.delim(file = "data/lmo2012_transect2014_redox2014.eggNOG.tpm.tsv")
 
-envdata <- read.delim(file = "../data/lmo2012_transect2014_redox2014.env-data.tsv")
+envdata <- read.delim(file = "data/lmo2012_transect2014_redox2014.env-data.tsv")
 envdata_t <- envdata %>% 
   t() 
 
@@ -572,17 +572,17 @@ server <- function(input, output) {
   pred_corr <- reactive({
     
     
-    if (input$env_param == "Temp") { rf = readRDS("../data/predict/rf.kegg.temperature.rds") }
-    if (input$env_param == "NH4") { rf = readRDS("../data/predict/rf.kegg.nh4.rds") }
-    if (input$env_param == "Sal") { rf = readRDS("../data/predict/rf.kegg.salinity.rds") }
-    if (input$env_param == "DOC") { rf = readRDS("../data/predict/rf.kegg.doc.rds") }
-    if (input$env_param == "Chla") { rf = readRDS("../data/predict/rf.kegg.chla.rds") }
+    if (input$env_param == "Temp") { rf = readRDS("data/predict/rf.kegg.temperature.rds") }
+    if (input$env_param == "NH4") { rf = readRDS("data/predict/rf.kegg.nh4.rds") }
+    if (input$env_param == "Sal") { rf = readRDS("data/predict/rf.kegg.salinity.rds") }
+    if (input$env_param == "DOC") { rf = readRDS("data/predict/rf.kegg.doc.rds") }
+    if (input$env_param == "Chla") { rf = readRDS("data/predict/rf.kegg.chla.rds") }
     
-    features = readRDS("../data/predict/feature-list.kegg.rds")
+    features = readRDS("data/predict/feature-list.kegg.rds")
     
     # reading count data
     
-    # tab <- read.delim("../data/predict/Transect2014_EggNOG.tpm.annotated.tsv")
+    # tab <- read.delim("data/predict/Transect2014_EggNOG.tpm.annotated.tsv")
     tab <- read.delim(input$external_data_file$datapath)
     id <- as.character(tab[,1])
     counts = tab[,2:ncol(tab)]
