@@ -43,6 +43,7 @@ envdata_t[, "NH4"] <- as.numeric(as.character(envdata_t[, "NH4"]))
 envdata_t[, "NO3"] <- as.numeric(as.character(envdata_t[, "NO3"]))
 envdata_t[, "PO4"] <- as.numeric(as.character(envdata_t[, "PO4"]))
 envdata_t[, "Chla"] <- as.numeric(as.character(envdata_t[, "Chla"]))
+envdata_t[, "Silicate"] <- as.numeric(as.character(envdata_t[, "Silicate"]))
 
 envdata_t[, "Date"] <- as.Date(envdata_t[, "Date"], format="%d/%m/%y")
 
@@ -323,7 +324,10 @@ ui <- dashboardPage(
                         "NH4",
                         "O2",
                         "Sal",
-                        "Chla"
+                        "Chla",
+                        "NO3",
+                        "PO4",
+                        "Silicate"
                       ),
                       selected = "Temperature"
                     )
@@ -342,7 +346,7 @@ ui <- dashboardPage(
                   title = "Description",
                   solidHeader = TRUE,
                   width = NULL,
-                  "This table displays the data which you selected on the left side and which is displayed in the heatmap."
+                  "This table displays the data which was filtered under the settings tag and which is also displayed in the heatmap."
                 ),
                 box(
                   title = "View Data",
