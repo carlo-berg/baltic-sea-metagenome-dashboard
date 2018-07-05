@@ -14,7 +14,7 @@ library(magrittr)
 library(randomForest)
 
 # setwd("~/Transfer/shinydashboard/app/")
-
+  
 # setting colors
 cols <- colorRampPalette(brewer.pal(10, "RdBu"))(256)
 
@@ -22,6 +22,8 @@ cols <- colorRampPalette(brewer.pal(10, "RdBu"))(256)
 
 KEGG.tpm <- read.delim(file = "data/lmo2012_transect2014_redox2014.KEGG-pathway-module.tpm.tsv")
 eggNOG.tpm <- read.delim(file = "data/lmo2012_transect2014_redox2014.eggNOG.tpm.tsv")
+
+eggNOG.tpm <- eggNOG.tpm[which(grepl("COG", eggNOG.tpm$X)), ]
 
 envdata <- read.delim(file = "data/lmo2012_transect2014_redox2014.env-data.tsv")
 envdata_t <- envdata %>% 
@@ -52,15 +54,24 @@ redoxgradient2014 <- colnames(envdata[c(65:72, 77, 78)])
 
 # preparing data ----
 
+# KEGG
 names <- KEGG.tpm[,1]
 KEGG.tpm <- KEGG.tpm[,-1]
 KEGG.tpm <- apply(KEGG.tpm, 2, as.numeric)
 KEGG.tpm <- as.matrix(KEGG.tpm)
 rownames(KEGG.tpm) <- names
 
+# eggNOGs
+names_e <- eggNOG.tpm[,1]
+eggNOG.tpm <- eggNOG.tpm[,-1]
+eggNOG.tpm <- apply(eggNOG.tpm, 2, as.numeric)
+eggNOG.tpm <- as.matrix(eggNOG.tpm)
+rownames(eggNOG.tpm) <- names_e
+
 # list of KEGG modules or eggNOGS
-modules <- rownames(KEGG.tpm)
-eggNOGs <- as.vector(eggNOG.tpm[c(1:200), "X"])
+modules_list <- c(rownames(KEGG.tpm), rownames(eggNOG.tpm))
+KEGGs <- rownames(KEGG.tpm)
+eggNOGs <- rownames(eggNOG.tpm)
 
 # BEGIN UI #############################################################################################
 
@@ -255,7 +266,9 @@ ui <- dashboardPage(
                     width = NULL,
                     solidHeader = TRUE,
                     collapsible = TRUE,
-                    selectInput('heatmap_modules', 'Select functional categories:', modules, multiple=TRUE, selectize=FALSE, selected = modules[c(1:20)]),
+                    selectInput('heatmap_modules', 'Select KEGG modules:', c(KEGGs), multiple=TRUE, selectize=FALSE, selected = modules_list[c(1:20)]),
+                    "or",
+                    selectInput('heatmap_modules_eggNOG', 'Select eggNOG COGs:', c(eggNOGs), multiple=TRUE, selectize=FALSE, selected = eggNOGs[c(1:20)]),
                     tags$b("Perform clustering of:"),
                     checkboxInput("cluster_samples", "Samples", FALSE),
                     checkboxInput("cluster_modules", "Modules", TRUE),
@@ -287,8 +300,6 @@ ui <- dashboardPage(
                   ), 
                   box(
                     plotlyOutput("contextual"),
-                    "Below the same plot with flipped coordinates (suited for the redox gradient samples).",
-                    plotlyOutput("contextual_redox"),
                     width = NULL,
                     title = "Environmental data plot",
                     solidHeader = TRUE,
@@ -464,8 +475,11 @@ server <- function(input, output) {
   
   
   
+  modules <- reactive({
+    
+    modules <- c(rownames(KEGG.tpm), rownames(eggNOG.tpm))  
   
-  
+  })
   
   selectedData <- reactive({
     
@@ -473,12 +487,7 @@ server <- function(input, output) {
       selectedData <- KEGG.tpm[c(input$heatmap_modules), intersect(filtered_samples()[,1], c(input$lmo_dataset_list, input$transect_dataset_list, input$redox_dataset_list))]
     
       if (input$use_external_data_file == TRUE) {
-        ext_data <- read.delim(input$external_data_file$datapath#,
-                         # header = TRUE,
-                         # sep = "\t"
-                         )
-        
-        print(input$external_data_file)
+        ext_data <- read.delim(input$external_data_file$datapath)
         row.names(ext_data) <- ext_data[, 1]
         ext_data <- as.matrix(ext_data[-1])
         selectedData <- merge(selectedData, ext_data, by="row.names", all.x = TRUE)
@@ -488,30 +497,35 @@ server <- function(input, output) {
         selectedData <- KEGG.tpm[c(input$heatmap_modules), intersect(filtered_samples()[,1], c(input$lmo_dataset_list, input$transect_dataset_list, input$redox_dataset_list))]
       }
       
+      
+      
+      
       } else  
       
       if (input$annotation_data == "eggNOG") {
-        selectedData <- eggNOG.tpm[c(1:input$normCount), c(input$lmo_dataset_list, input$transect_dataset_list, input$redox_dataset_list)]
-      }
+        selectedData <- eggNOG.tpm[c(input$heatmap_modules_eggNOG), intersect(filtered_samples()[,1], c(input$lmo_dataset_list, input$transect_dataset_list, input$redox_dataset_list))]
+        
+        if (input$use_external_data_file == TRUE) {
+          ext_data <- read.delim(input$external_data_file$datapath)
+          
+          row.names(ext_data) <- ext_data[, 1]
+          ext_data <- as.matrix(ext_data[-1])
+          selectedData <- merge(selectedData, ext_data, by="row.names", all.x = TRUE)
+          row.names(selectedData) <- selectedData[, 1]
+          selectedData <- selectedData %>% select(-"Row.names")
+        } else {
+          selectedData <- eggNOG.tpm[c(input$heatmap_modules_eggNOG), intersect(filtered_samples()[,1], c(input$lmo_dataset_list, input$transect_dataset_list, input$redox_dataset_list))]
+        }
+        
+        
+        
+        
+        }
    
     
   })
   
-  
-  
-  # module list to select
-  output$module_list <- reactive({
-    
-    if (input$annotation_data == "KEGG") {
-      module_list <- modules
-    } else  
-      
-      if (input$annotation_data == "eggNOG") {
-        module_list <- eggNOGs
-      }
-    
-    
-  })
+
   
   
   #datatable
@@ -541,28 +555,10 @@ server <- function(input, output) {
     contextualplot <- ggplot(envdata_t_plot) +
       geom_line(aes(x = samples, y = envdata_t_plot[, input$nutrients])) +
       geom_point(aes(x = samples, y = envdata_t_plot[, input$nutrients])) +
-      # scale_x_date(limits = c(input$dates[1], input$dates[2])) + 
       ylab("Concentration or level") +
-      xlab("Sample") +
+      xlab("Samples") +
       ggtitle(input$nutrients) 
-    ggplotly(contextualplot)
-  })
-  
-  output$contextual_redox <- renderPlotly({
     
-    envdata_t_plot <- envdata_t %>% 
-      filter(samples %in% c(input$lmo_dataset_list, input$transect_dataset_list, input$redox_dataset_list))
-    
-    contextual_redoxplot <- ggplot(envdata_t_plot) +
-      geom_line(aes(x = Depth, y = envdata_t_plot[, input$nutrients])) +
-      geom_point(aes(x = Depth, y = envdata_t_plot[, input$nutrients])) +
-      # scale_x_date(limits = c(input$dates[1], input$dates[2])) + 
-      ylab("Concentration or level") +
-      xlab("Depth") +
-      coord_flip() +
-      scale_x_reverse() + 
-      ggtitle(input$nutrients) 
-    ggplotly(contextual_redoxplot)
   })
   
   
@@ -571,18 +567,28 @@ server <- function(input, output) {
   # correlation plot      
   pred_corr <- reactive({
     
-    
-    if (input$env_param == "Temp") { rf = readRDS("data/predict/rf.kegg.temperature.rds") }
-    if (input$env_param == "NH4") { rf = readRDS("data/predict/rf.kegg.nh4.rds") }
-    if (input$env_param == "Sal") { rf = readRDS("data/predict/rf.kegg.salinity.rds") }
-    if (input$env_param == "DOC") { rf = readRDS("data/predict/rf.kegg.doc.rds") }
-    if (input$env_param == "Chla") { rf = readRDS("data/predict/rf.kegg.chla.rds") }
-    
-    features = readRDS("data/predict/feature-list.kegg.rds")
+    if (input$annotation_data == "KEGG") {  
+      
+      if (input$env_param == "Temp") { rf = readRDS("data/predict/rf.kegg.temperature.rds") }
+      if (input$env_param == "NH4") { rf = readRDS("data/predict/rf.kegg.nh4.rds") }
+      if (input$env_param == "Sal") { rf = readRDS("data/predict/rf.kegg.salinity.rds") }
+      if (input$env_param == "DOC") { rf = readRDS("data/predict/rf.kegg.doc.rds") }
+      if (input$env_param == "Chla") { rf = readRDS("data/predict/rf.kegg.chla.rds") }
+      
+      features = readRDS("data/predict/feature-list.kegg.rds")
+    } else {
+      
+      if (input$env_param == "Temp") { rf = readRDS("data/predict/rf.cog.temperature.rds") }
+      if (input$env_param == "NH4") { rf = readRDS("data/predict/rf.cog.nh4.rds") }
+      if (input$env_param == "Sal") { rf = readRDS("data/predict/rf.cog.salinity.rds") }
+      if (input$env_param == "DOC") { rf = readRDS("data/predict/rf.cog.doc.rds") }
+      if (input$env_param == "Chla") { rf = readRDS("data/predict/rf.cog.chla.rds") }
+      
+      features = readRDS("data/predict/feature-list.cog.rds")
+    }
     
     # reading count data
-    
-    # tab <- read.delim("data/predict/Transect2014_EggNOG.tpm.annotated.tsv")
+
     tab <- read.delim(input$external_data_file$datapath)
     id <- as.character(tab[,1])
     counts = tab[,2:ncol(tab)]
@@ -594,7 +600,6 @@ server <- function(input, output) {
     
     # do the predictions
     pred = c()
-    #predict(rf, t(counts[,1]), type="response")
     for (i in 1:ncol(counts)) {
       pred[i] = round(predict(rf, t(counts[,i]), type="response"), digits = 3)
     }

@@ -2,3 +2,7 @@
 .Rapp.history
 rsconnect/
 data/
+.RData
+.Rhistory
+.gitignore
+
