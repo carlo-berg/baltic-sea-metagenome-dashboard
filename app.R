@@ -1,4 +1,4 @@
-## dashboard.app.R
+## app.R
 # https://github.com/carlo-berg/baltic-sea-metagenome-dashboard
 
 library(shiny)
@@ -14,11 +14,11 @@ library(magrittr)
 library(randomForest)
 
 # setwd("~/Transfer/shinydashboard/app/")
-  
-# setting colors
+
+# setting colors ####
 cols <- colorRampPalette(brewer.pal(10, "RdBu"))(256)
 
-# loading data ----
+# loading data ####
 
 KEGG.tpm <- read.delim(file = "data/lmo2012_transect2014_redox2014.KEGG-pathway-module.tpm.tsv")
 eggNOG.tpm <- read.delim(file = "data/lmo2012_transect2014_redox2014.eggNOG.tpm.tsv")
@@ -47,43 +47,43 @@ envdata_t[, "Silicate"] <- as.numeric(as.character(envdata_t[, "Silicate"]))
 
 envdata_t[, "Date"] <- as.Date(envdata_t[, "Date"], format="%d/%m/%y")
 
-# sample groups
+# sample groups ####
 
 lmo2012 <- colnames(envdata[c(2:34)])
 transect2014 <- colnames(envdata[c(35:64,73:76)])
 redoxgradient2014 <- colnames(envdata[c(65:72, 77, 78)])
 
-# preparing data ----
+# preparing data ####
 
-# KEGG
+# KEGG ####
 names <- KEGG.tpm[,1]
 KEGG.tpm <- KEGG.tpm[,-1]
 KEGG.tpm <- apply(KEGG.tpm, 2, as.numeric)
 KEGG.tpm <- as.matrix(KEGG.tpm)
 rownames(KEGG.tpm) <- names
 
-# eggNOGs
+# eggNOGs ####
 names_e <- eggNOG.tpm[,1]
 eggNOG.tpm <- eggNOG.tpm[,-1]
 eggNOG.tpm <- apply(eggNOG.tpm, 2, as.numeric)
 eggNOG.tpm <- as.matrix(eggNOG.tpm)
 rownames(eggNOG.tpm) <- names_e
 
-# list of KEGG modules or eggNOGS
-modules_list <- c(rownames(KEGG.tpm), rownames(eggNOG.tpm))
+# list of KEGG modules or eggNOGS ####
 KEGGs <- rownames(KEGG.tpm)
 eggNOGs <- rownames(eggNOG.tpm)
+modules_list <- c(KEGGs, eggNOGs)
 
 # BEGIN UI #############################################################################################
 
 ui <- dashboardPage(
   skin = "green",
   
-  # header content ----
+  # header content ####
   dashboardHeader(title = "Baltic Sea metagenome",
                   titleWidth = 300),
   
-  # sidebar content ----
+  # sidebar content ####
   dashboardSidebar(
     width = 300,
     sidebarMenu(
@@ -112,12 +112,10 @@ ui <- dashboardPage(
     )
   ),
   
-  # body content ----
+  # body content ####
   dashboardBody(
     tabItems(
       
-      # First tab content
-
       tabItem(tabName = "settings",
               h2("1. Settings"),
               
@@ -156,7 +154,7 @@ ui <- dashboardPage(
                 
                 column(
                   width = 4,
-          
+                  
                   box(
                     title = "B. Filter samples by parameter range",
                     "All criteria are applied together, samples with NA values in one parameter will be kept but may be excluded based on the filtering of the other parameters. By default, the sliders display the range in the data to include all samples.",
@@ -206,7 +204,7 @@ ui <- dashboardPage(
                     solidHeader = TRUE,
                     collapsible = TRUE,
                     
-                    radioButtons("annotation_data", "TPM-normalized counts of:", c("KEGG metabolic pathway modules" = "KEGG", "eggNOGs" = "eggNOG"))
+                    radioButtons("annotation_data", "TPM-normalized counts of:", c("KEGG metabolic pathway modules" = "KEGG", "eggNOG COGs" = "eggNOG"))
                     
                     
                   ),
@@ -222,7 +220,7 @@ ui <- dashboardPage(
                                 accept = c(
                                   "text/tab-separated-values,text/plain",
                                   ".tsv")
-                                )
+                      )
                       
                   )
                   
@@ -340,21 +338,21 @@ ui <- dashboardPage(
       tabItem(tabName = "description",
               h2("4. Data table"),
               fluidRow( 
-              column(
-                width = 12,
-                box(
-                  title = "Description",
-                  solidHeader = TRUE,
-                  width = NULL,
-                  "This table displays the data which was filtered under the settings tag and which is also displayed in the heatmap."
-                ),
-                box(
-                  title = "View Data",
-                  solidHeader = TRUE,
-                  width = NULL,
-                  DTOutput('tbl')
+                column(
+                  width = 12,
+                  box(
+                    title = "Description",
+                    solidHeader = TRUE,
+                    width = NULL,
+                    "This table displays the data which was filtered under the settings tag and which is also displayed in the heatmap."
+                  ),
+                  box(
+                    title = "View Data",
+                    solidHeader = TRUE,
+                    width = NULL,
+                    DTOutput('tbl')
+                  )
                 )
-              )
               )),
       
       
@@ -407,19 +405,7 @@ ui <- dashboardPage(
               ))
       
       
-      
-      
-      
-      
     ),
-    
-
-    
-    
-    
-    
-    
-    
     
     fluidRow(
       column(
@@ -447,34 +433,34 @@ ui <- dashboardPage(
 
 
 # BEGIN SERVER ###################################################
+
 server <- function(input, output) {
   
-# clustering yes/no
+  # clustering yes/no ####
   
   output$cluster_samples <- reactive({
-  
-    input$cluster_samples  
-  
-  })
     
- 
+    input$cluster_samples  
+    
+  })
   
-  # subsetting data interactively
+  
+  # subsetting data interactively ####
   
   filtered_samples <-reactive({
-
-  filtered_samples <- envdata_t %>% 
-    filter( is.na(Sal) | (Sal >= input$salinity[1] & Sal <= input$salinity[2]))  %>% 
-    filter( is.na(O2) | (O2 >= input$oxygen[1] & O2 <= input$oxygen[2]))  %>%
-    filter( is.na(Depth) | (Depth >= input$depth[1] & Depth <= input$depth[2]))  %>%
-    filter( is.na(Temp) | (Temp >= input$temp[1] & Temp <= input$temp[2]))  %>%
-    filter( is.na(NH4) | (NH4 >= input$nh4[1] & NH4 <= input$nh4[2]))  %>%
-    filter( is.na(NO3) | (NO3 >= input$no3[1] & NO3 <= input$no3[2]))  %>%
-    filter( is.na(PO4) | (PO4 >= input$po4[1] & PO4 <= input$po4[2]))  %>%
-    filter( is.na(Chla) | (Chla >= input$chla[1] & Chla <= input$chla[2]))  %>%
-    filter(Date >= input$dates[1] & Date <= input$dates[2]) %>% 
-    select(samples)
-  
+    
+    filtered_samples <- envdata_t %>% 
+      filter( is.na(Sal) | (Sal >= input$salinity[1] & Sal <= input$salinity[2]))  %>% 
+      filter( is.na(O2) | (O2 >= input$oxygen[1] & O2 <= input$oxygen[2]))  %>%
+      filter( is.na(Depth) | (Depth >= input$depth[1] & Depth <= input$depth[2]))  %>%
+      filter( is.na(Temp) | (Temp >= input$temp[1] & Temp <= input$temp[2]))  %>%
+      filter( is.na(NH4) | (NH4 >= input$nh4[1] & NH4 <= input$nh4[2]))  %>%
+      filter( is.na(NO3) | (NO3 >= input$no3[1] & NO3 <= input$no3[2]))  %>%
+      filter( is.na(PO4) | (PO4 >= input$po4[1] & PO4 <= input$po4[2]))  %>%
+      filter( is.na(Chla) | (Chla >= input$chla[1] & Chla <= input$chla[2]))  %>%
+      filter(Date >= input$dates[1] & Date <= input$dates[2]) %>% 
+      select(samples)
+    
   }) 
   
   
@@ -482,14 +468,16 @@ server <- function(input, output) {
   modules <- reactive({
     
     modules <- c(rownames(KEGG.tpm), rownames(eggNOG.tpm))  
-  
+    
   })
+  
+  # selectedData  ####  
   
   selectedData <- reactive({
     
     if (input$annotation_data == "KEGG") {
       selectedData <- KEGG.tpm[c(input$heatmap_modules), intersect(filtered_samples()[,1], c(input$lmo_dataset_list, input$transect_dataset_list, input$redox_dataset_list))]
-    
+      
       if (input$use_external_data_file == TRUE) {
         ext_data <- read.delim(input$external_data_file$datapath)
         row.names(ext_data) <- ext_data[, 1]
@@ -501,10 +489,7 @@ server <- function(input, output) {
         selectedData <- KEGG.tpm[c(input$heatmap_modules), intersect(filtered_samples()[,1], c(input$lmo_dataset_list, input$transect_dataset_list, input$redox_dataset_list))]
       }
       
-      
-      
-      
-      } else  
+    } else  
       
       if (input$annotation_data == "eggNOG") {
         selectedData <- eggNOG.tpm[c(input$heatmap_modules_eggNOG), intersect(filtered_samples()[,1], c(input$lmo_dataset_list, input$transect_dataset_list, input$redox_dataset_list))]
@@ -521,18 +506,12 @@ server <- function(input, output) {
           selectedData <- eggNOG.tpm[c(input$heatmap_modules_eggNOG), intersect(filtered_samples()[,1], c(input$lmo_dataset_list, input$transect_dataset_list, input$redox_dataset_list))]
         }
         
-        
-        
-        
-        }
-   
+      }
     
   })
   
-
   
-  
-  #datatable
+  # datatable ####
   
   {
     output$tbl = DT::renderDT(
@@ -550,7 +529,8 @@ server <- function(input, output) {
   }
   
   
- # environmental data plots
+  # environmental data plots ####
+  
   output$contextual <- renderPlotly({
     
     envdata_t_plot <- envdata_t %>% 
@@ -566,9 +546,8 @@ server <- function(input, output) {
   })
   
   
-  
+  # random forest predictions  ####  
   # reading rf object and corresponding feature list
-  # correlation plot      
   pred_corr <- reactive({
     
     if (input$annotation_data == "KEGG") {  
@@ -592,7 +571,7 @@ server <- function(input, output) {
     }
     
     # reading count data
-
+    
     tab <- read.delim(input$external_data_file$datapath)
     id <- as.character(tab[,1])
     counts = tab[,2:ncol(tab)]
@@ -615,6 +594,8 @@ server <- function(input, output) {
     
   })  
   
+  # table of predicted values  ####  
+  
   output$tbl_pred = DT::renderDT(
     pred_corr(), 
     extensions = c('Buttons', 'FixedColumns','Scroller'),
@@ -628,15 +609,14 @@ server <- function(input, output) {
                    buttons = I(c('copy', 'csv', 'excel')))
   )
   
+  
+  # Heatmap  ####    
   output$heatmap <- renderD3heatmap({
     d3heatmap(
       scale(selectedData()), Colv=input$cluster_samples, Rowv = input$cluster_modules
     )
   })
   
-  
-
-
   
 }
 
