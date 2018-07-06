@@ -21,5 +21,5 @@ The external data file should be in the same format as described above and can b
 A deployed live version is also available at [shinyapps.io](https://cberg.shinyapps.io/baltic-sea-metagenome-dashboard/)
 
 
-### Funding
+## Funding
 The [BONUS BLUEPRINT](https://blueprint-project.org) project has received funding from BONUS (Art 185), funded jointly by the EU and the national funding institutions of Denmark, Sweden, Germany, Finland, and Estonia.
