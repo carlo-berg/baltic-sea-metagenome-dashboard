@@ -17,6 +17,9 @@ TPM-mormalized count data of KEGG modules and eggNOGs are used in a tab-delimite
 ### External data
 The external data file should be in the same format as described above and can be uploaded under the settings tab. 
 
+### Dependencies
+Tested with R 3.5.0. Packages needed: shiny, shinydashboard, tidyverse, reshape, plotly, d3heatmap, DT, RColorBrewer, randomForest
+
 ## Live version
 A deployed live version is also available at [shinyapps.io](https://cberg.shinyapps.io/baltic-sea-metagenome-dashboard/)
 

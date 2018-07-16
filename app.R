@@ -4,13 +4,11 @@
 library(shiny)
 library(shinydashboard)
 library(reshape)
-library(ggplot2)
 library(plotly)
 library(d3heatmap)
 library(DT)
 library(RColorBrewer)
 library(tidyverse)
-library(magrittr)
 library(randomForest)
 
 # setwd("~/Transfer/shinydashboard/app/")

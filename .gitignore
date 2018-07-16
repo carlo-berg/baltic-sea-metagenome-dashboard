@@ -5,4 +5,5 @@ data/
 .RData
 .Rhistory
 README.html
+*.utf8.md
 
