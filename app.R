@@ -9,6 +9,7 @@ library(d3heatmap)
 library(DT)
 library(RColorBrewer)
 library(tidyverse)
+library(magrittr)
 library(randomForest)
 
 # setwd("~/Transfer/shinydashboard/app/")
@@ -32,17 +33,7 @@ envdata_t <- envdata_t[-1,]
 envdata_t <- as.data.frame(envdata_t) %>% 
   mutate(samples=rownames(envdata_t))
 
-envdata_t[, "Sal"] <- as.numeric(as.character(envdata_t[, "Sal"]))
-envdata_t[, "Depth"] <- as.numeric(as.character(envdata_t[, "Depth"]))
-envdata_t[, "DOC"] <- as.numeric(as.character(envdata_t[, "DOC"]))
-envdata_t[, "O2"] <- as.numeric(as.character(envdata_t[, "O2"]))
-envdata_t[, "Temp"] <- as.numeric(as.character(envdata_t[, "Temp"]))
-envdata_t[, "NH4"] <- as.numeric(as.character(envdata_t[, "NH4"]))
-envdata_t[, "NO3"] <- as.numeric(as.character(envdata_t[, "NO3"]))
-envdata_t[, "PO4"] <- as.numeric(as.character(envdata_t[, "PO4"]))
-envdata_t[, "Chla"] <- as.numeric(as.character(envdata_t[, "Chla"]))
-envdata_t[, "Silicate"] <- as.numeric(as.character(envdata_t[, "Silicate"]))
-
+envdata_t[,c(1:4, 6, 7, 11:16)] %<>% lapply(function(x) as.numeric(as.character(x)))
 envdata_t[, "Date"] <- as.Date(envdata_t[, "Date"], format="%d/%m/%y")
 
 # sample groups ####
@@ -87,26 +78,10 @@ ui <- dashboardPage(
     sidebarMenu(
       # icons from https://getbootstrap.com/docs/3.3/components/
       menuItem("1. Settings", tabName = "settings", icon = icon("cog", lib = "glyphicon")),
-      
       menuItem("2. Heatmap", tabName = "dashboard", icon = icon("equalizer", lib = "glyphicon")),
-      
-      menuItem(
-        "3. Environmental data",
-        tabName = "contextual",
-        icon = icon("bar-chart")
-      ),
-      menuItem(
-        "4. View and export count data",
-        tabName = "description",
-        icon = icon("save", lib = "glyphicon")
-      ),
-      
-      menuItem(
-        "5. Prediction of env. parameters",
-        tabName = "predict",
-        icon = icon("tree-deciduous", lib = "glyphicon")
-      )
-      
+      menuItem("3. Environmental data", tabName = "contextual", icon = icon("bar-chart")),
+      menuItem("4. View and export count data", tabName = "description", icon = icon("save", lib = "glyphicon")),
+      menuItem("5. Prediction of env. parameters", tabName = "predict", icon = icon("tree-deciduous", lib = "glyphicon"))
     )
   ),
   
@@ -139,14 +114,9 @@ ui <- dashboardPage(
                     collapsible = TRUE,
                     
                     selectInput('lmo_dataset_list', 'Timepoints LMO 2012', lmo2012, multiple=TRUE, selectize=FALSE, selected = lmo2012[c(1:2)]),
-                    
                     selectInput('transect_dataset_list', 'Stations Transect 2014', transect2014, multiple=TRUE, selectize=FALSE, selected = transect2014[c(1:2)]),
-                    
                     selectInput('redox_dataset_list', 'Depths Redox gradient 2014', redoxgradient2014, multiple=TRUE, selectize=FALSE,selected = redoxgradient2014[c(1:2)])
-                    
                   )
-                  
-                  
                   
                 ),
                 
@@ -168,20 +138,14 @@ ui <- dashboardPage(
                     sliderInput("no3", "Nitrate:", min = 0, max = 15, value = c(floor(min(na.omit(envdata_t[, "NO3"]))), ceiling(max(na.omit(envdata_t[, "NO3"]))))),
                     sliderInput("po4", "Phosphate:", min = 0, max = 15, value = c(floor(min(na.omit(envdata_t[, "PO4"]))), ceiling(max(na.omit(envdata_t[, "PO4"]))))),
                     sliderInput("chla", "Chlorophyll a:", min = 0, max = 10, value = c(floor(min(na.omit(envdata_t[, "Chla"]))), ceiling(max(na.omit(envdata_t[, "Chla"])))))
-                    
-                    
                   )
-                  
-                  
-                  
-                  
+                 
                 ),
                 
                 column(
                   width = 4,
                   
                   box(
-                    
                     title = "C. Filter samples by date range",
                     width = NULL,
                     solidHeader = TRUE,
@@ -203,8 +167,6 @@ ui <- dashboardPage(
                     collapsible = TRUE,
                     
                     radioButtons("annotation_data", "TPM-normalized counts of:", c("KEGG metabolic pathway modules" = "KEGG", "eggNOG COGs" = "eggNOG"))
-                    
-                    
                   ),
                   
                   box(title = "E. Upload external data file",
@@ -214,22 +176,11 @@ ui <- dashboardPage(
                       
                       "Tab-separated textfile. The first column must be the functional annotation category, every other column is one sample.",
                       tags$br(), tags$br(),
-                      fileInput("external_data_file", "Choose data File",
-                                accept = c(
-                                  "text/tab-separated-values,text/plain",
-                                  ".tsv")
+                      fileInput("external_data_file", "Choose data File", accept = c("text/tab-separated-values,text/plain", ".tsv")
                       )
-                      
                   )
-                  
                 )
-                
-                
               )),
-      
-      
-      
-      
       
       
       
@@ -279,9 +230,6 @@ ui <- dashboardPage(
               )),
       
       
-      
-      
-      
       tabItem(tabName = "contextual",
               h2("3. Environmental data"),
               fluidRow(
@@ -314,17 +262,7 @@ ui <- dashboardPage(
                     selectInput(
                       inputId = "nutrients",
                       label = "Variable:",
-                      choices = c(
-                        "Temp",
-                        "DOC",
-                        "NH4",
-                        "O2",
-                        "Sal",
-                        "Chla",
-                        "NO3",
-                        "PO4",
-                        "Silicate"
-                      ),
+                      choices = c("Temp", "DOC", "NH4", "O2", "Sal", "Chla", "NO3", "PO4", "Silicate"),
                       selected = "Temperature"
                     )
                   )
@@ -389,13 +327,7 @@ ui <- dashboardPage(
                     selectInput(
                       inputId = "env_param",
                       label = "Environmental parameter:",
-                      choices = c(
-                        "Temp",
-                        "NH4",
-                        "Sal",
-                        "DOC",
-                        "Chla"
-                      ),
+                      choices = c("Temp", "NH4", "Sal", "DOC", "Chla"),
                       selected = "Temp"
                     )
                   )
@@ -436,12 +368,7 @@ server <- function(input, output) {
   
   # clustering yes/no ####
   
-  output$cluster_samples <- reactive({
-    
-    input$cluster_samples  
-    
-  })
-  
+  output$cluster_samples <- reactive({ input$cluster_samples })
   
   # subsetting data interactively ####
   
@@ -463,11 +390,7 @@ server <- function(input, output) {
   
   
   
-  modules <- reactive({
-    
-    modules <- c(rownames(KEGG.tpm), rownames(eggNOG.tpm))  
-    
-  })
+  modules <- reactive({ modules <- c(rownames(KEGG.tpm), rownames(eggNOG.tpm)) })
   
   # selectedData  ####  
   
