@@ -320,6 +320,7 @@ ui <- dashboardPage(
               title = "Table of predicted values",
               solidHeader = TRUE,
               width = NULL,
+              "If you see a red error message, make sure you uploaded a data file in the correct format.",
               DTOutput("tbl_pred")
             )
           ),
