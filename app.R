@@ -14,34 +14,24 @@ library(randomForest)
 
 # setwd("~/Transfer/shinydashboard/app/")
 
+# loading data ####
+KEGG.tpm <- read.delim(file = "data/lmo2012_transect2014_redox2014.KEGG-pathway-module.tpm.tsv")
+eggNOG.tpm <- read.delim(file = "data/lmo2012_transect2014_redox2014.eggNOG.tpm.tsv")
+envdata_t <- read.delim(file = "data/lmo2012_transect2014_redox2014.env-data.tsv") %>% t()
+
 # setting colors ####
 cols <- colorRampPalette(brewer.pal(10, "RdBu"))(256)
 
-# loading data ####
+# preparing data ####
 
-KEGG.tpm <- read.delim(file = "data/lmo2012_transect2014_redox2014.KEGG-pathway-module.tpm.tsv")
-
-eggNOG.tpm <- read.delim(file = "data/lmo2012_transect2014_redox2014.eggNOG.tpm.tsv")
-eggNOG.tpm <- eggNOG.tpm[which(grepl("COG", eggNOG.tpm$X)), ]
-
-envdata_t <- read.delim(file = "data/lmo2012_transect2014_redox2014.env-data.tsv") %>% t()
-
+# Environmental data ####
 colnames(envdata_t) <- envdata_t[1, ]
 envdata_t <- envdata_t[-1, ]
 envdata_t %<>% 
   as.data.frame(.) %>%
   mutate(samples = rownames(envdata_t)) %>% 
   mutate(Date = as.Date(Date, format = "%d/%m/%y"))
-
 envdata_t[, c(1:4, 6, 7, 11:16)] %<>% lapply(function(x) as.numeric(as.character(x)))
-
-# sample groups ####
-
-lmo2012 <- colnames(envdata[c(2:34)])
-transect2014 <- colnames(envdata[c(35:64, 73:76)])
-redoxgradient2014 <- colnames(envdata[c(65:72, 77, 78)])
-
-# preparing data ####
 
 # KEGG ####
 names <- KEGG.tpm[, 1]
@@ -51,6 +41,7 @@ KEGG.tpm <- as.matrix(KEGG.tpm)
 rownames(KEGG.tpm) <- names
 
 # eggNOGs ####
+eggNOG.tpm <- eggNOG.tpm[which(grepl("COG", eggNOG.tpm$X)), ]
 names_e <- eggNOG.tpm[, 1]
 eggNOG.tpm <- eggNOG.tpm[, -1]
 eggNOG.tpm <- apply(eggNOG.tpm, 2, as.numeric)
@@ -61,6 +52,12 @@ rownames(eggNOG.tpm) <- names_e
 KEGGs <- rownames(KEGG.tpm)
 eggNOGs <- rownames(eggNOG.tpm)
 modules_list <- c(KEGGs, eggNOGs)
+
+# sample groups ####
+lmo2012 <- envdata_t[c(1:33), "samples"]
+transect2014 <- envdata_t[c(35:64, 73:76), "samples"]
+redoxgradient2014 <- envdata_t[c(65:72, 77, 78), "samples"]
+
 
 # BEGIN UI #############################################################################################
 
