@@ -20,21 +20,20 @@ cols <- colorRampPalette(brewer.pal(10, "RdBu"))(256)
 # loading data ####
 
 KEGG.tpm <- read.delim(file = "data/lmo2012_transect2014_redox2014.KEGG-pathway-module.tpm.tsv")
-eggNOG.tpm <- read.delim(file = "data/lmo2012_transect2014_redox2014.eggNOG.tpm.tsv")
 
+eggNOG.tpm <- read.delim(file = "data/lmo2012_transect2014_redox2014.eggNOG.tpm.tsv")
 eggNOG.tpm <- eggNOG.tpm[which(grepl("COG", eggNOG.tpm$X)), ]
 
-envdata <- read.delim(file = "data/lmo2012_transect2014_redox2014.env-data.tsv")
-envdata_t <- envdata %>%
-  t()
+envdata_t <- read.delim(file = "data/lmo2012_transect2014_redox2014.env-data.tsv") %>% t()
 
 colnames(envdata_t) <- envdata_t[1, ]
 envdata_t <- envdata_t[-1, ]
-envdata_t <- as.data.frame(envdata_t) %>%
-  mutate(samples = rownames(envdata_t))
+envdata_t %<>% 
+  as.data.frame(.) %>%
+  mutate(samples = rownames(envdata_t)) %>% 
+  mutate(Date = as.Date(Date, format = "%d/%m/%y"))
 
 envdata_t[, c(1:4, 6, 7, 11:16)] %<>% lapply(function(x) as.numeric(as.character(x)))
-envdata_t[, "Date"] <- as.Date(envdata_t[, "Date"], format = "%d/%m/%y")
 
 # sample groups ####
 
